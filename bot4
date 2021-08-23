@@ -1,0 +1,103 @@
+#!/bin/python
+# -*- coding: utf-8 -*-
+import re
+import telebot
+import time
+import subprocess
+import os
+from threading import Thread
+from datetime import datetime, date
+
+token = 'ÒÎÊÅÍ'
+chat_id = ÈÄ_×ÀÒÀ
+my_id = ÌÎÉ_ÈÄ
+abonent_id = ÈÄ_ÏÎ_ÓÌÎË×ÀÍÈÞ
+ 
+class web_to_radio(Thread):
+    def __init__(self, name):
+        Thread.__init__(self)
+        self.name = name
+
+    def run(self):
+        #msg = "%s is running" % self.name
+        print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} {self.name} is running')
+        while True:
+            try:
+                bot.polling(interval=5)
+            except Exception as ex:
+                print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} Bot polling error: {ex}')
+
+class radio_to_web(Thread):
+    def __init__(self, name):
+        Thread.__init__(self)
+        self.name = name
+
+    def run(self):
+        print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} {self.name} is running')
+        while True:
+            date = datetime.now()
+            #msg_path = '/data/data/com.termux/files/home/storage/shared/Documents/HFpager/' + date.strftime("%Y-%m-%d") + '.MSG/'
+            msg_path = '/storage/emulated/0/Documents/HFpager/' + date.strftime("%Y-%m-%d") + '.MSG/'
+            now = time.time()
+            if os.path.isdir(msg_path):
+                try:
+                    for f in os.listdir(msg_path):
+                        if os.stat(os.path.join(msg_path, f)).st_ctime > now - 5:
+                            messg = open(msg_path + f, 'r', encoding='cp1251')
+                            text=messg.read()
+                            if re.match(r'\d{6}-RO-0.*_' + str(my_id) + '.TXT', f):
+                                print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} HFpager private message received: {text}')
+                                bot.send_message(chat_id = chat_id, text = f'Private message received: {text}')
+                            elif re.match(r'\d{6}-RO-[2,3].*_' + str(my_id) + '.TXT', f):
+                                print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} HFpager private message received and acknowledgment sent: {text}')
+                                bot.send_message(chat_id = chat_id, text = f'Private message received and acknowledgment sent: {text}')
+                            elif re.match(r'\d{6}-R',f):
+                                print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} HFpager message intercepted: {text}')
+                                bot.send_message(chat_id = chat_id, text = f'Message intercepted: {text}', disable_notification = True)
+                            elif re.match(r'\d{6}-S[1-9]-\dP',f):
+                                print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} HFpager message sent and acknowledgment received: {text}')
+                                bot.send_message(chat_id = chat_id, text = f'Message sent and acknowledgment received: {text}', disable_notification = True)
+                            elif re.match(r'\d{6}-S[1-9]-\d0',f):
+                                print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} HFpager message sent: {text}')
+                                bot.send_message(chat_id = chat_id, text = f'Message sent: {text}', disable_notification = True)
+                except Exception as ex:
+                    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} HFpager send/receive message error: {ex}')
+            time.sleep(5)
+
+def send_pager(message, abonent_id):
+    if re.match(r'^>(\d{1,5})',message):
+        abonent_id = re.match(r'^>(\d{1,5})',message).group(1)
+        mes = re.split(r'((?<=^>)\d{1,})', message, maxsplit=1)
+        message = mes[2]
+    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} HFpager send to ID: {abonent_id} message: {message}')
+    proc = subprocess.Popen(
+        'am start --user 0 -n ru.radial.nogg.hfpager/ru.radial.full.hfpager.MainActivity -a '
+        '"android.intent.action.SEND" --es "android.intent.extra.TEXT" "{}" -t "text/plain" --ei '
+        '"android.intent.extra.INDEX" "{}" --es "android.intent.extra.SUBJECT" "Flags:1,0"'.format(message,abonent_id),
+        stdout=subprocess.PIPE, shell=True)
+    output = proc.stdout.read()
+    return abonent_id,message
+
+
+bot = telebot.TeleBot(token)
+
+@bot.message_handler(commands=['help', 'start'])
+def send_welcome(message):
+    bot.reply_to(message, """\
+Hi there, I am HFpager Bot.
+I am forward message from Telegram Chat ID: {} to/from HFpager ID: {}\
+""".format(chat_id, my_id))
+
+
+@bot.message_handler(func=lambda message: True)
+def echo_message(message):
+    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} Bot receive message: {message.text}')
+    id,text = send_pager(message.text, abonent_id)
+
+if __name__ == "__main__":
+    name = "WEB->HFpager"
+    to_radio = web_to_radio(name)
+    to_radio.start()
+    name = "HFpager->WEB"
+    to_web = radio_to_web(name)
+    to_web.start()
