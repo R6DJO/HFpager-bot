@@ -13,56 +13,46 @@ chat_id = ИД_ЧАТА
 my_id = МОЙ_ИД
 abonent_id = ИД_ПО_УМОЛЧАНИЮ
  
-class web_to_radio(Thread):
-    def __init__(self, name):
-        Thread.__init__(self)
-        self.name = name
+def bot_polling():
+    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} {self.name} is running')
+    while True:
+        try:
+            bot.polling(interval=5)
+        except Exception as ex:
+            print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} Bot polling error: {ex}')
 
-    def run(self):
-        #msg = "%s is running" % self.name
-        print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} {self.name} is running')
-        while True:
+
+def hfpager_bot():
+    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} {self.name} is running')
+    while True:
+        date = datetime.now()
+        #msg_path = '/data/data/com.termux/files/home/storage/shared/Documents/HFpager/' + date.strftime("%Y-%m-%d") + '.MSG/'
+        msg_path = '/storage/emulated/0/Documents/HFpager/' + date.strftime("%Y-%m-%d") + '.MSG/'
+        now = time.time()
+        if os.path.isdir(msg_path):
             try:
-                bot.polling(interval=5)
+                for f in os.listdir(msg_path):
+                    if os.stat(os.path.join(msg_path, f)).st_ctime > now - 5:
+                        messg = open(msg_path + f, 'r', encoding='cp1251')
+                        text=messg.read()
+                        if re.match(r'\d{6}-RO-0.*_' + str(my_id) + '.TXT', f):
+                            print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} HFpager private message received: {text}')
+                            bot.send_message(chat_id = chat_id, text = f'Private message received: {text}')
+                        elif re.match(r'\d{6}-RO-[2,3].*_' + str(my_id) + '.TXT', f):
+                            print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} HFpager private message received and acknowledgment sent: {text}')
+                            bot.send_message(chat_id = chat_id, text = f'Private message received and acknowledgment sent: {text}')
+                        elif re.match(r'\d{6}-R',f):
+                            print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} HFpager message intercepted: {text}')
+                            bot.send_message(chat_id = chat_id, text = f'Message intercepted: {text}', disable_notification = True)
+                        elif re.match(r'\d{6}-S[1-9]-\dP',f):
+                            print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} HFpager message sent and acknowledgment received: {text}')
+                            bot.send_message(chat_id = chat_id, text = f'Message sent and acknowledgment received: {text}', disable_notification = True)
+                        elif re.match(r'\d{6}-S[1-9]-\d0',f):
+                            print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} HFpager message sent: {text}')
+                            bot.send_message(chat_id = chat_id, text = f'Message sent: {text}', disable_notification = True)
             except Exception as ex:
-                print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} Bot polling error: {ex}')
-
-class radio_to_web(Thread):
-    def __init__(self, name):
-        Thread.__init__(self)
-        self.name = name
-
-    def run(self):
-        print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} {self.name} is running')
-        while True:
-            date = datetime.now()
-            #msg_path = '/data/data/com.termux/files/home/storage/shared/Documents/HFpager/' + date.strftime("%Y-%m-%d") + '.MSG/'
-            msg_path = '/storage/emulated/0/Documents/HFpager/' + date.strftime("%Y-%m-%d") + '.MSG/'
-            now = time.time()
-            if os.path.isdir(msg_path):
-                try:
-                    for f in os.listdir(msg_path):
-                        if os.stat(os.path.join(msg_path, f)).st_ctime > now - 5:
-                            messg = open(msg_path + f, 'r', encoding='cp1251')
-                            text=messg.read()
-                            if re.match(r'\d{6}-RO-0.*_' + str(my_id) + '.TXT', f):
-                                print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} HFpager private message received: {text}')
-                                bot.send_message(chat_id = chat_id, text = f'Private message received: {text}')
-                            elif re.match(r'\d{6}-RO-[2,3].*_' + str(my_id) + '.TXT', f):
-                                print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} HFpager private message received and acknowledgment sent: {text}')
-                                bot.send_message(chat_id = chat_id, text = f'Private message received and acknowledgment sent: {text}')
-                            elif re.match(r'\d{6}-R',f):
-                                print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} HFpager message intercepted: {text}')
-                                bot.send_message(chat_id = chat_id, text = f'Message intercepted: {text}', disable_notification = True)
-                            elif re.match(r'\d{6}-S[1-9]-\dP',f):
-                                print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} HFpager message sent and acknowledgment received: {text}')
-                                bot.send_message(chat_id = chat_id, text = f'Message sent and acknowledgment received: {text}', disable_notification = True)
-                            elif re.match(r'\d{6}-S[1-9]-\d0',f):
-                                print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} HFpager message sent: {text}')
-                                bot.send_message(chat_id = chat_id, text = f'Message sent: {text}', disable_notification = True)
-                except Exception as ex:
-                    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} HFpager send/receive message error: {ex}')
-            time.sleep(5)
+                print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} HFpager send/receive message error: {ex}')
+        time.sleep(5)
 
 def send_pager(message, abonent_id):
     if re.match(r'^>(\d{1,5})',message):
@@ -95,9 +85,9 @@ def echo_message(message):
     id,text = send_pager(message.text, abonent_id)
 
 if __name__ == "__main__":
-    name = "WEB->HFpager"
-    to_radio = web_to_radio(name)
+    to_radio = Thread(target = bot_polling)
+    to_web = Thread(target = hfpager_bot)
     to_radio.start()
-    name = "HFpager->WEB"
-    to_web = radio_to_web(name)
     to_web.start()
+    to_radio.join()
+    to_web.join()
