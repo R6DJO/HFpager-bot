@@ -2,7 +2,9 @@
 
 Install termux app
 
-pkg upgrade
-pkg install python
-pip install pytelegramapi
-bot4
+```bash
+pkg upgrade  
+pkg install python  
+pip install pytelegramapi  
+./bot4
+```
