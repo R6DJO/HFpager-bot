@@ -1,6 +1,6 @@
 # HFpager-bot
 
-Install termux app
+Install termux app from F-Droid or Google Play
 
 ```bash
 pkg upgrade  
