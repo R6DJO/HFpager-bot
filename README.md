@@ -22,3 +22,6 @@ nohup python -u bot4 >> bot.log 2>&1 &
 tail -f bot4.log
 
 ```
+
+Send a message to the chat and the bot will pass it with HFpager to ID: ИД_ПО_УМОЛЧАНИЮ  
+Send ```>123 blah blah blah``` and the bot will pass it with HFpager to ID: 123
