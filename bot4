@@ -8,10 +8,10 @@ import os
 from threading import Thread
 from datetime import datetime, date
 
-token = 'ÒÎÊÅÍ'
-chat_id = ÈÄ_×ÀÒÀ
-my_id = ÌÎÉ_ÈÄ
-abonent_id = ÈÄ_ÏÎ_ÓÌÎË×ÀÍÈŞ
+token = 'Ğ¢ĞĞšĞ•Ğ'
+chat_id = Ğ˜Ğ”_Ğ§ĞĞ¢Ğ
+my_id = ĞœĞĞ™_Ğ˜Ğ”
+abonent_id = Ğ˜Ğ”_ĞŸĞ_Ğ£ĞœĞĞ›Ğ§ĞĞĞ˜Ğ®
  
 class web_to_radio(Thread):
     def __init__(self, name):
