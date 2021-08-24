@@ -14,7 +14,7 @@ my_id = МОЙ_ИД
 abonent_id = ИД_ПО_УМОЛЧАНИЮ
  
 def bot_polling():
-    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} {self.name} is running')
+    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} Bot polling is running')
     while True:
         try:
             bot.polling(interval=5)
@@ -23,7 +23,7 @@ def bot_polling():
 
 
 def hfpager_bot():
-    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} {self.name} is running')
+    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} HFpager message parsing is running')
     while True:
         date = datetime.now()
         #msg_path = '/data/data/com.termux/files/home/storage/shared/Documents/HFpager/' + date.strftime("%Y-%m-%d") + '.MSG/'
@@ -47,6 +47,9 @@ def hfpager_bot():
                         elif re.match(r'\d{6}-S[1-9]-\dP',f):
                             print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} HFpager message sent and acknowledgment received: {text}')
                             bot.send_message(chat_id = chat_id, text = f'Message sent and acknowledgment received: {text}', disable_notification = True)
+                        elif re.match(r'\d{6}-S[1-9]-\dN',f):
+                            print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} HFpager message sent and not acknowledgment received: {text}')
+                            bot.send_message(chat_id = chat_id, text = f'Message sent and not acknowledgment received: {text}', disable_notification = True)
                         elif re.match(r'\d{6}-S[1-9]-\d0',f):
                             print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} HFpager message sent: {text}')
                             bot.send_message(chat_id = chat_id, text = f'Message sent: {text}', disable_notification = True)
@@ -57,13 +60,19 @@ def hfpager_bot():
 def send_pager(message, abonent_id):
     if re.match(r'^>(\d{1,5})',message):
         abonent_id = re.match(r'^>(\d{1,5})',message).group(1)
-        mes = re.split(r'((?<=^>)\d{1,})', message, maxsplit=1)
-        message = mes[2]
+        message = re.split(r'((?<=^>)\d{1,}\s*)', message, maxsplit=1)[-1]
+         #= mes[-1]
+    if re.match(r'^!',message):
+        repeat = 1
+        message = re.split(r'^!\s*', message, maxsplit=1)[-1]
+    else:
+        repeat = 0
+    print(f'repeat:{repeat} message:{message}')
     print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} HFpager send to ID: {abonent_id} message: {message}')
     proc = subprocess.Popen(
-        'am start --user 0 -n ru.radial.nogg.hfpager/ru.radial.full.hfpager.MainActivity -a '
-        '"android.intent.action.SEND" --es "android.intent.extra.TEXT" "{}" -t "text/plain" --ei '
-        '"android.intent.extra.INDEX" "{}" --es "android.intent.extra.SUBJECT" "Flags:1,0"'.format(message,abonent_id),
+        f'am start --user 0 -n ru.radial.nogg.hfpager/ru.radial.full.hfpager.MainActivity -a '
+        f'"android.intent.action.SEND" --es "android.intent.extra.TEXT" "{message}" -t "text/plain" --ei '
+        f'"android.intent.extra.INDEX" "{abonent_id}" --es "android.intent.extra.SUBJECT" "Flags:1,{repeat}"',#.format(message,abonent_id,repeat),
         stdout=subprocess.PIPE, shell=True)
     output = proc.stdout.read()
     return abonent_id,message
@@ -73,10 +82,18 @@ bot = telebot.TeleBot(token)
 
 @bot.message_handler(commands=['help', 'start'])
 def send_welcome(message):
-    bot.reply_to(message, """\
-Hi there, I am HFpager Bot.
-I am forward message from Telegram Chat ID: {} to/from HFpager ID: {}\
-""".format(chat_id, my_id))
+    bot.reply_to(message, """Hi there, I am HFpager Bot.
+I am forward message to/from HFpager ID:{}\n
+Usage:\n
+`blah blah blah` - send _blah blah blah_ to {}\n
+`>123blah blah blah`
+`>123 blah blah blah` - send _blah blah blah_ to _123_\n
+`!blah blah blah`
+`! blah blah blah` - repeat send until ACK\n
+`>123 !blahblah`
+`>123! blahblah`
+`>123!blahblah`
+`>123 ! blahblah` - ...""".format(my_id,abonent_id), parse_mode = 'markdown')
 
 
 @bot.message_handler(func=lambda message: True)
@@ -85,6 +102,7 @@ def echo_message(message):
     id,text = send_pager(message.text, abonent_id)
 
 if __name__ == "__main__":
+    name = "WEB->HFpager"
     to_radio = Thread(target = bot_polling)
     to_web = Thread(target = hfpager_bot)
     to_radio.start()
