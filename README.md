@@ -8,8 +8,8 @@ Download ```bot4``` file to you smartphone and edit:
 ```
 token = 'ТОКЕН'
 chat_id = ИД_ЧАТА
-my_id = МОЙ_ИД
-abonent_id = ИД_ПО_УМОЛЧАНИЮ
+my_id = ИД_МОЕГО_ПЕЙДЖЕРА
+abonent_id = ИД_ПЕЙДЖЕРА_КОРРЕСПОНДЕНТА_ПО_УМОЛЧАНИЮ
 ```
 After install python and modules and run Bot
 
