@@ -7,12 +7,8 @@ import subprocess
 import os
 from threading import Thread
 from datetime import datetime, date
+from config import token,chat_id,my_id,abonent_id
 
-token = 'ТОКЕН'
-chat_id = ИД_ЧАТА
-my_id = МОЙ_ИД
-abonent_id = ИД_ПО_УМОЛЧАНИЮ
- 
 def bot_polling():
     print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} Bot polling is running')
     while True:
@@ -62,6 +58,8 @@ def send_pager(message, abonent_id):
         abonent_id = re.match(r'^>(\d{1,5})',message).group(1)
         message = re.split(r'((?<=^>)\d{1,}\s*)', message, maxsplit=1)[-1]
          #= mes[-1]
+    else:
+        return 1,1
     if re.match(r'^!',message):
         repeat = 1
         message = re.split(r'^!\s*', message, maxsplit=1)[-1]
