@@ -62,7 +62,7 @@ def parse_file(filename, text):
         print(f'{now} HFpager private message received and acknowledgment '
               f'sent: {text}')
         bot.send_message(chat_id=chat_id, text='Private message received '
-                         'and acknowledgment sent: {text}')
+                         f'and acknowledgment sent: {text}')
     elif re.match(r'\d{6}-R', filename):
         now = date_time_now()
         print(f'{now} HFpager message intercepted: {text}')
