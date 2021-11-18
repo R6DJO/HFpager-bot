@@ -117,7 +117,7 @@ def send_pager(message, abonent_id):
         f'--ei "android.intent.extra.INDEX" "{abonent_id}" '
         f'--es "android.intent.extra.SUBJECT" "Flags:1,{repeat}"',
         stdout=subprocess.PIPE, shell=True)
-    proc.stdout.read()
+    out = proc.stdout.read()
 
 
 bot = telebot.TeleBot(token)
