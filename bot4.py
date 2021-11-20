@@ -66,7 +66,7 @@ def parse_file(filename, text):
     elif re.match(r'\d{6}-R', filename):
         now = date_time_now()
         print(f'{now} HFpager message intercepted: {text}')
-        bot.send_message(chat_id=chat_id, text='Message intercepted: {text}',
+        bot.send_message(chat_id=chat_id, text=f'Message intercepted: {text}',
                          disable_notification=True)
     elif re.match(r'\d{6}-S[1-9]-\dP', filename):
         now = date_time_now()
