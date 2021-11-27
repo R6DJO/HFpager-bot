@@ -130,7 +130,7 @@ def send_welcome(message):
 Как меня использовать:\n
 `>blah blah blah` - отправит _blah blah blah_ на ID:{abonent_id}\n
 `>123 blah blah blah` - отправит _blah blah blah_ на ID:_123_\n
-`! blah blah blah` - ! в сообщении раносилен опции "Повторять до подтв."\n
+`! blah blah blah` - ! в сообщении равносилен опции "Повторять до подтв."\n
 `>123! blahblah` - отправка на ID:123 будет повторятся до подтверждения
 """, parse_mode='markdown')
 
