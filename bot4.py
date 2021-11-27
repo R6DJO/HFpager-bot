@@ -125,18 +125,14 @@ bot = telebot.TeleBot(token)
 
 @bot.message_handler(commands=['help', 'start'])
 def send_welcome(message):
-    bot.reply_to(message, f"""Hi there, I am HFpager Bot.
-I am forward message to/from HFpager ID:{my_id}\n
-Usage:\n
-`blah blah blah` - send _blah blah blah_ to {abonent_id}\n
-`>123blah blah blah`
-`>123 blah blah blah` - send _blah blah blah_ to _123_\n
-`!blah blah blah`
-`! blah blah blah` - repeat send until ACK\n
-`>123 !blahblah`
-`>123! blahblah`
-`>123!blahblah`
-`>123 ! blahblah` - ...""", parse_mode='markdown')
+    bot.reply_to(message, f"""Привет, я HFpager Bot.
+Я отправляю сообщения с шлюза UB9WMS через HFpager ID:{my_id}\n
+Как меня использовать:\n
+`>blah blah blah` - отправит _blah blah blah_ на ID:{abonent_id}\n
+`>123 blah blah blah` - отправит _blah blah blah_ на ID:_123_\n
+`! blah blah blah` - ! в сообщении раносилен опции "Повторять до подтв."\n
+`>123! blahblah` - отправка на ID:123 будет повторятся до подтверждения
+""", parse_mode='markdown')
 
 
 @bot.message_handler(func=lambda message: True)
