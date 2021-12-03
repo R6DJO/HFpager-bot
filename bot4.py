@@ -97,7 +97,7 @@ def detect_map(text):
     if re.match(r'=X-{0,1}\d{2}\.\d{5},-{0,1}\d{2,3}\.\d{5},',x[1]):
         mlat,mlon,point =x[1][2:].split(',')
         message = f'https://www.openstreetmap.org/?mlat={mlat}&mlon={mlon}&zoom=12'
-        bot.send_message(chat_id=chat_id, text=message')
+        bot.send_message(chat_id=chat_id, text=message)
 
 def send_pager(message, abonent_id):
     # сообщение >[id][text] -> [id]
