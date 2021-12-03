@@ -51,23 +51,27 @@ def hfpager_bot():
         time.sleep(5)
 
 
+
 def parse_file(filename, text):
     if re.match(r'\d{6}-RO-0.*_' + str(my_id) + '.TXT', filename):
         now = date_time_now()
         print(f'{now} HFpager private message received: {text}')
         bot.send_message(chat_id=chat_id,
                          text=f'Private message received: {text}')
+        detect_map(text)
     elif re.match(r'\d{6}-RO-[2,3].*_' + str(my_id) + '.TXT', filename):
         now = date_time_now()
         print(f'{now} HFpager private message received and acknowledgment '
               f'sent: {text}')
         bot.send_message(chat_id=chat_id, text='Private message received '
                          f'and acknowledgment sent: {text}')
+        detect_map(text)
     elif re.match(r'\d{6}-R', filename):
         now = date_time_now()
         print(f'{now} HFpager message intercepted: {text}')
         bot.send_message(chat_id=chat_id, text=f'Message intercepted: {text}',
                          disable_notification=True)
+        detect_map(text)
     elif re.match(r'\d{6}-S[1-9]-\dP', filename):
         now = date_time_now()
         print(f'{now} HFpager message sent and acknowledgment '
@@ -88,6 +92,12 @@ def parse_file(filename, text):
         bot.send_message(chat_id=chat_id, text=f'Message sent: {text}',
                          disable_notification=True)
 
+def detect_map(text):
+    x = text.split('\n',maxsplit=1)
+    if re.match(r'=X-{0,1}\d{2}\.\d{5},-{0,1}\d{2,3}\.\d{5},',x[1]):
+        mlat,mlon,point =x[1][2:].split(',')
+        message = f'https://www.openstreetmap.org/?mlat={mlat}&mlon={mlon}&zoom=12'
+        bot.send_message(chat_id=chat_id, text=message')
 
 def send_pager(message, abonent_id):
     # сообщение >[id][text] -> [id]
