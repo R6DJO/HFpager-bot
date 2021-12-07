@@ -109,7 +109,7 @@ def send_pager(message, abonent_id):
     #     return 1,1
 
     # сообщение >[id][text] -> [id]
-    message = match.group(1)
+    # message = match.group(1)
     match = re.match(r'^(\d{1,5}) (.+)', message)
     if match:
         abonent_id = match.group(1)
