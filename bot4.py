@@ -7,6 +7,8 @@ import subprocess
 import os
 from threading import Thread
 from datetime import datetime
+from textwrap import shorten
+
 from config import abonent_id, chat_id, my_id, token
 
 
@@ -54,7 +56,7 @@ def hfpager_bot():
 
 def parse_file(filename, text):
     log_text = text.split(' :\n')[0]
-    short_text = text.split(' :\n')[1][:10]
+    short_text = shorten(text.split(' :\n')[1], width=15, placeholder="...")
     if re.match(r'\d{6}-RO-0.+_' + str(my_id) + '.TXT', filename):
         now = date_time_now()
         print(f'{now} HFpager private message received: {text}')
@@ -77,16 +79,16 @@ def parse_file(filename, text):
     elif re.match(r'\d{6}-S[1-9]-\dP', filename):
         now = date_time_now()
         print(f'{now} HFpager message sent and acknowledgment '
-              f'received: {log_text}')
+              f'received: {log_text} {short_text}')
         bot.send_message(chat_id=chat_id, text='Message sent and '
-                         f'acknowledgment received: {log_text}',
+                         f'acknowledgment received: {log_text} {short_text}',
                          disable_notification=True)
     elif re.match(r'\d{6}-S[1-9]-\dN', filename):
         now = date_time_now()
         print(f'{now} HFpager message sent and not '
-              f'acknowledgment received: {log_text}')
+              f'acknowledgment received: {log_text} {short_text}')
         bot.send_message(chat_id=chat_id, text='Message sent and not '
-                         f'acknowledgment received: {log_text}',
+                         f'acknowledgment received: {log_text} {short_text}',
                          disable_notification=True)
     elif re.match(r'\d{6}-S[1-9]-\d0', filename):
         now = date_time_now()
@@ -159,9 +161,10 @@ def echo_message(message):
     now = date_time_now()
     match = re.match(r'^>(.+)', message.text)
     if match:
-        print(f'{now} Bot receive message: {message.text}')
+        short_text = shorten(message.text, width=15, placeholder="...")
+        print(f'{now} Bot receive message: {short_text}')
         send_pager(match.group(1), abonent_id)
-        bot.send_message(chat_id=chat_id, text=f'Recepied: {message.text}')
+        bot.send_message(chat_id=chat_id, text=f'Recepied: {short_text}')
 
 
 if __name__ == "__main__":
