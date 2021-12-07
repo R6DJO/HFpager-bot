@@ -54,6 +54,7 @@ def hfpager_bot():
 
 def parse_file(filename, text):
     log_text = text.split(' :\n')[0]
+    
     if re.match(r'\d{6}-RO-0.+_' + str(my_id) + '.TXT', filename):
         now = date_time_now()
         print(f'{now} HFpager private message received: {text}')
@@ -76,16 +77,16 @@ def parse_file(filename, text):
     elif re.match(r'\d{6}-S[1-9]-\dP', filename):
         now = date_time_now()
         print(f'{now} HFpager message sent and acknowledgment '
-              f'received: {text}')
+              f'received: {log_text}')
         bot.send_message(chat_id=chat_id, text='Message sent and '
-                         f'acknowledgment received: {text}',
+                         f'acknowledgment received: {log_text}',
                          disable_notification=True)
     elif re.match(r'\d{6}-S[1-9]-\dN', filename):
         now = date_time_now()
         print(f'{now} HFpager message sent and not '
-              f'acknowledgment received: {text}')
+              f'acknowledgment received: {log_text}')
         bot.send_message(chat_id=chat_id, text='Message sent and not '
-                         f'acknowledgment received: {text}',
+                         f'acknowledgment received: {log_text}',
                          disable_notification=True)
     elif re.match(r'\d{6}-S[1-9]-\d0', filename):
         now = date_time_now()
