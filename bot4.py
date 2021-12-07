@@ -53,13 +53,13 @@ def hfpager_bot():
 
 
 def parse_file(filename, text):
-    if re.match(r'\d{6}-RO-0.*_' + str(my_id) + '.TXT', filename):
+    if re.match(r'\d{6}-RO-0.+_' + str(my_id) + '.TXT', filename):
         now = date_time_now()
         print(f'{now} HFpager private message received: {text}')
         bot.send_message(chat_id=chat_id,
                          text=f'Private message received: {text}')
         detect_map(text)
-    elif re.match(r'\d{6}-RO-[2,3].*_' + str(my_id) + '.TXT', filename):
+    elif re.match(r'\d{6}-RO-[2,3].+_' + str(my_id) + '.TXT', filename):
         now = date_time_now()
         print(f'{now} HFpager private message received and acknowledgment '
               f'sent: {text}')
@@ -103,25 +103,29 @@ def detect_map(text):
         bot.send_message(chat_id=chat_id, text=message)
 
 def send_pager(message, abonent_id):
+    # сообщение начинается с >
+    match = re.match(r'^>(.+)', message)
+    if not match:
+        return 1,1
+
     # сообщение >[id][text] -> [id]
-    if re.match(r'^>(\d{1,5})', message):
-        abonent_id = re.match(r'^>(\d{1,5})', message).group(1)
-        message = re.split(r'((?<=^>)\d{1,}\s*)', message, maxsplit=1)[-1]
-    # сообщение >[text] -> [abonent_id]
-    elif re.match(r'^>', message):
-        message = re.split(r'^>\s*', message, maxsplit=1)[-1]
-    # сообщение [text] -x->
-    else:
-        return 1, 1
+    message = match.group(1)
+    match = re.match(r'^(\d{1,5})(.+)', message)
+    if match:
+        abonent_id = match.group(1)
+        message = match.group(2)
+
     # сообщение начинается с ! -> бит повтора 1
-    if re.match(r'^!', message):
+    match =  re.match(r'^!(.+)', message)
+    if match:
         repeat = 1
-        message = re.split(r'^!\s*', message, maxsplit=1)[-1]
+        message = match.group(1)
     else:
         repeat = 0
+
     now = date_time_now()
-    print(f'{now} HFpager send to ID: {abonent_id} repeat:{repeat} '
-          f'message: {message}')
+    print(f'{now} HFpager send to ID:{abonent_id} repeat:{repeat} '
+          f'message:{message.strip()}///')
     proc = subprocess.Popen(
         f'am start --user 0 '
         f'-n ru.radial.nogg.hfpager/ru.radial.full.hfpager.MainActivity '
@@ -153,6 +157,7 @@ def echo_message(message):
     now = date_time_now()
     print(f'{now} Bot receive message: {message.text}')
     send_pager(message.text, abonent_id)
+    bot.send_message(chat_id=chat_id, text=message.text)
 
 
 if __name__ == "__main__":
