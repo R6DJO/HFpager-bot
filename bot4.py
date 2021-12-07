@@ -158,8 +158,8 @@ def echo_message(message):
     match = re.match(r'^>(.+)', message.text)
     if match:
         print(f'{now} Bot receive message: {message.text}')
-        send_pager(message.text, abonent_id)
-        bot.send_message(chat_id=chat_id, text=message.text)
+        send_pager(match.group(1), abonent_id)
+        bot.send_message(chat_id=chat_id, text=f'Recepied: {message.text}')
 
 
 if __name__ == "__main__":
