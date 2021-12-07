@@ -88,8 +88,8 @@ def parse_file(filename, text):
                          disable_notification=True)
     elif re.match(r'\d{6}-S[1-9]-\d0', filename):
         now = date_time_now()
-        print(f'{now} HFpager message sent: {text.split(' :\n')[0]}')
-        bot.send_message(chat_id=chat_id, text=f'Message sent: {text.split(' :\n')[0]}',
+        print(f'{now} HFpager message sent: {text.split(" :\n")[0]}')
+        bot.send_message(chat_id=chat_id, text=f'Message sent: {text.split(" :\n")[0]}',
                          disable_notification=True)
 
 def detect_map(text):
