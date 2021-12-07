@@ -93,7 +93,8 @@ def parse_file(filename, text):
     elif re.match(r'\d{6}-S[1-9]-\d0', filename):
         now = date_time_now()
         print(f'{now} HFpager message sent: {log_text} {short_text}')
-        bot.send_message(chat_id=chat_id, text=f'Message sent: {log_text} {short_text}',
+        bot.send_message(chat_id=chat_id,
+                         text=f'Message sent: {log_text} {short_text}',
                          disable_notification=True)
 
 def detect_map(text):
@@ -107,14 +108,9 @@ def detect_map(text):
         bot.send_message(chat_id=chat_id, text=message)
 
 def send_pager(message, abonent_id):
-    # # сообщение начинается с >
-    # match = re.match(r'^>(.+)', message)
-    # if not match:
-    #     return 1,1
-
+    # > обрезаем заранее
     # сообщение >[id][text] -> [id]
-    # message = match.group(1)
-    match = re.match(r'^(\d{1,5}) (.+)', message)
+    match = re.match(r'^(\d{1,5})(\D.+)', message)
     if match:
         abonent_id = match.group(1)
         message = match.group(2)
@@ -129,7 +125,7 @@ def send_pager(message, abonent_id):
 
     now = date_time_now()
     print(f'{now} HFpager send to ID:{abonent_id} repeat:{repeat} '
-          f'message:{message.strip()}')
+          f'message:\n{message.strip()}')
     proc = subprocess.Popen(
         f'am start --user 0 '
         f'-n ru.radial.nogg.hfpager/ru.radial.full.hfpager.MainActivity '
@@ -159,6 +155,7 @@ def send_welcome(message):
 @bot.message_handler(func=lambda message: True)
 def echo_message(message):
     now = date_time_now()
+    # обрабатываем начинающиеся с >
     match = re.match(r'^>(.+)', message.text)
     if match:
         short_text = shorten(message.text, width=15, placeholder="...")
