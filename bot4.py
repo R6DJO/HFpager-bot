@@ -156,7 +156,7 @@ def send_welcome(message):
 def echo_message(message):
     now = date_time_now()
     print(f'{now} Bot receive message: {message.text}')
-    match = re.match(r'^>(.+)', message)
+    match = re.match(r'^>(.+)', message.text)
     if match:
         send_pager(message.text, abonent_id)
         bot.send_message(chat_id=chat_id, text=message.text)
