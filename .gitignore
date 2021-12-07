@@ -146,4 +146,5 @@ dmypy.json
 .mypy_cache
 
 config.py
+test.py
 
