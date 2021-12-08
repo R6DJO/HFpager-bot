@@ -56,6 +56,7 @@ def hfpager_bot():
 
 
 def parse_file(filename, text):
+    print(text.split(' :\n'))
     log_text = text.split(' :\n')[0]
     short_text = shorten(text.split(' :\n')[1], width=25, placeholder="...")
     if re.match(r'\d{6}-RO-0.+_' + str(my_id) + '.TXT', filename):
