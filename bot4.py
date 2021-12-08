@@ -8,8 +8,9 @@ import os
 from threading import Thread
 from datetime import datetime
 from textwrap import shorten
+import requests
 
-from config import abonent_id, chat_id, my_id, token
+from config import abonent_id, chat_id, my_id, token, owm_api_key
 
 
 def date_time_now():
@@ -62,20 +63,20 @@ def parse_file(filename, text):
         print(f'{now} HFpager private message received: {text}')
         bot.send_message(chat_id=chat_id,
                          text=f'Private message received: {text}')
-        detect_map(text)
+        detect_request(text)
     elif re.match(r'\d{6}-RO-[2,3].+_' + str(my_id) + '.TXT', filename):
         now = date_time_now()
         print(f'{now} HFpager private message received and acknowledgment '
               f'sent: {text}')
         bot.send_message(chat_id=chat_id, text='Private message received '
                          f'and acknowledgment sent: {text}')
-        detect_map(text)
+        detect_request(text)
     elif re.match(r'\d{6}-R', filename):
         now = date_time_now()
         print(f'{now} HFpager message intercepted: {text}')
         bot.send_message(chat_id=chat_id, text=f'Message intercepted: {text}',
                          disable_notification=True)
-        detect_map(text)
+        detect_request(text)
     elif re.match(r'\d{6}-S[1-9]-\dP', filename):
         now = date_time_now()
         print(f'{now} HFpager message sent and acknowledgment '
@@ -97,17 +98,68 @@ def parse_file(filename, text):
                          text=f'Message sent: {log_text} {short_text}',
                          disable_notification=True)
 
-def detect_map(text):
+def detect_request(text):
+    now = date_time_now()
+    match = re.search(r'(\d{1,5}) \(\d+\) > (\d+),.*', text)
+    if match:
+        mesg_from = match[1]
+        mesg_to = match[2]
+    
+    parse_message = text.split('\n',maxsplit=1)[1]
+    
+    # парсим =x{lat},{lon}: map_link -> web
     match = re.search(r'=x(-{0,1}\d{1,2}\.\d{1,6}),(-{0,1}\d{1,3}\.\d{1,6})',
-                      text.split('\n',maxsplit=1)[1])
-    if match:    
+                      parse_message)
+    if match:
         mlat =match[1]
         mlon =match[2]
-        print(mlat, mlon)
         message = f'https://www.openstreetmap.org/?mlat={mlat}&mlon={mlon}&zoom=12'
+        print(f'{now} HFpager -> MapLink: {message}') 
         bot.send_message(chat_id=chat_id, text=message)
 
-def send_pager(message, abonent_id):
+    # парсим =w{lat},{lon}: weather -> hf
+    match = re.search(r'=w(-{0,1}\d{1,2}\.\d{1,6}),(-{0,1}\d{1,3}\.\d{1,6})',
+                      parse_message)
+    if match and mesg_to == my_id:
+        mlat =match[1]
+        mlon =match[2]
+        print(f'{now} HFpager -> Weather: {mlat} {mlat}')
+        weather = get_weather(lat=mlat, lot=mlon)
+        pager_transmit(weather, mesg_from, 1)
+    
+
+def get_weather(lat, lon):
+    url = f'https://api.openweathermap.org/data/2.5/onecall?lat={lat}&lon={lon}&exclude=minutely,hourly&appid={owm_api_key}&lang=ru&units=metric'
+    resp = requests.get(url)
+    data = resp.json()
+    weather = ''
+    for day in data['daily'][:3]:
+        date = datetime.fromtimestamp(day['dt']).strftime('%m/%d')
+        temp_min = day['temp']['min']
+        temp_max = day['temp']['max']
+        wind_speed = day['wind_speed']
+        wind_gust = day['wind_gust']
+        weather_cond = day['weather'][0]['description']
+        wind_direct = get_wind_direction(day['wind_deg'])
+        weather += f'{date} {weather_cond} {temp_min:.0f}-{temp_max:.0f}°C {wind_direct} {wind_speed:.0f}-{wind_gust:.0f}м/с\n'
+    return weather
+
+
+def get_wind_direction(deg):
+    l = ['С ','СВ',' В','ЮВ','Ю ','ЮЗ',' З','СЗ']
+    for i in range(0,8):
+        step = 45.
+        min = i*step - 45/2.
+        max = i*step + 45/2.
+        if i == 0 and deg > 360-45/2.:
+            deg = deg - 360
+        if deg >= min and deg <= max:
+            res = l[i]
+            break
+    return res
+
+
+def parse_for_pager(message, abonent_id):
     # > обрезаем заранее
     # сообщение >[id][text] -> [id]
     match = re.match(r'^(\d{1,5})(\D.+)', message)
@@ -123,6 +175,9 @@ def send_pager(message, abonent_id):
     else:
         repeat = 0
 
+    pager_transmit(message, abonent_id, repeat)
+
+def pager_transmit(message, abonent_id, repeat):
     now = date_time_now()
     print(f'{now} HFpager send to ID:{abonent_id} repeat:{repeat} '
           f'message:\n{message.strip()}')
@@ -160,7 +215,7 @@ def echo_message(message):
     if match:
         short_text = shorten(message.text, width=15, placeholder="...")
         print(f'{now} Bot receive message: {short_text}')
-        send_pager(match.group(1), abonent_id)
+        parse_for_pager(match.group(1), abonent_id)
         bot.send_message(chat_id=chat_id, text=f'Recepied: {short_text}')
 
 
