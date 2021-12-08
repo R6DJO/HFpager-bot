@@ -120,11 +120,12 @@ def detect_request(text):
     # парсим =w{lat},{lon}: weather -> hf
     match = re.search(r'=w(-{0,1}\d{1,2}\.\d{1,6}),(-{0,1}\d{1,3}\.\d{1,6})',
                       parse_message)
-    if match and mesg_to == my_id:
+    print(match[1],match[2])
+    if match and mesg_to == str(my_id):
         mlat =match[1]
         mlon =match[2]
-        print(f'{now} HFpager -> Weather: {mlat} {mlat}')
-        weather = get_weather(lat=mlat, lot=mlon)
+        print(f'{now} HFpager -> Weather: {mlat} {mlon}')
+        weather = get_weather(mlat, mlon)
         pager_transmit(weather, mesg_from, 1)
     
 
