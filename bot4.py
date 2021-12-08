@@ -99,15 +99,10 @@ def parse_file(filename, text):
 
 def detect_request(text):
     now = date_time_now()
-    match = re.search(r'(\d{1,5}) \(\d+\) > (\d+),.*', text)
-    if match:
-        mesg_from = match[1]
-        mesg_to = match[2]
-    
-    parse_message = text.split('\n',maxsplit=1)[1]
+    parse_message = text.split('\n',maxsplit=1)[-1:][0]
     
     # парсим =x{lat},{lon}: map_link -> web
-    match = re.search(r'=x(-{0,1}\d{1,2}\.\d{1,6}),(-{0,1}\d{1,3}\.\d{1,6})',
+    match = re.search(r'^=x(-{0,1}\d{1,2}\.\d{1,6}),(-{0,1}\d{1,3}\.\d{1,6})',
                       parse_message)
     if match:
         mlat =match[1]
@@ -115,11 +110,18 @@ def detect_request(text):
         message = f'https://www.openstreetmap.org/?mlat={mlat}&mlon={mlon}&zoom=12'
         print(f'{now} HFpager -> MapLink: {message}') 
         bot.send_message(chat_id=chat_id, text=message)
+    
+    # получаем id адресатов
+    match = re.search(r'^(\d{1,5}) \(\d+\) > (\d+).*', text)
+    if match:
+        mesg_from = match[1]
+        mesg_to = match[2]
+    else:
+        return
 
     # парсим =w{lat},{lon}: weather -> hf
-    match = re.search(r'=w(-{0,1}\d{1,2}\.\d{1,6}),(-{0,1}\d{1,3}\.\d{1,6})',
+    match = re.search(r'^=w(-{0,1}\d{1,2}\.\d{1,6}),(-{0,1}\d{1,3}\.\d{1,6})',
                       parse_message)
-    print(match[1],match[2])
     if match and mesg_to == str(my_id):
         mlat =match[1]
         mlon =match[2]
