@@ -40,17 +40,17 @@ def hfpager_bot():
         msg_dir = f'/storage/emulated/0/Documents/HFpager/{date_now}.MSG/'
         nowt = time.time()
         if os.path.isdir(msg_dir):
-            try:
-                for filename in os.listdir(msg_dir):
-                    path_file = os.path.join(msg_dir, filename)
-                    if os.stat(path_file).st_ctime > nowt - 5:
-                        mesg = open(msg_dir + filename, 'r',
-                                    encoding='cp1251')
-                        text = mesg.read()
-                        parse_file(filename, text)
-            except Exception as ex:
-                now = date_time_now()
-                print(f'{now} HFpager send/receive message error: {ex}')
+            # try:
+            for filename in os.listdir(msg_dir):
+                path_file = os.path.join(msg_dir, filename)
+                if os.stat(path_file).st_ctime > nowt - 5:
+                    mesg = open(msg_dir + filename, 'r',
+                                encoding='cp1251')
+                    text = mesg.read()
+                    parse_file(filename, text)
+            # except Exception as ex:
+                # now = date_time_now()
+                # print(f'{now} HFpager send/receive message error: {ex}')
         time.sleep(5)
 
 
