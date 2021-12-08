@@ -57,7 +57,7 @@ def hfpager_bot():
 
 def parse_file(filename, text):
     log_text = text.split(' :\n')[0]
-    short_text = shorten(text.split(' :\n')[1], width=15, placeholder="...")
+    short_text = shorten(text.split(' :\n')[1], width=25, placeholder="...")
     if re.match(r'\d{6}-RO-0.+_' + str(my_id) + '.TXT', filename):
         now = date_time_now()
         print(f'{now} HFpager private message received: {text}')
@@ -214,7 +214,7 @@ def echo_message(message):
     # обрабатываем начинающиеся с >
     match = re.match(r'^>(.+)', message.text)
     if match:
-        short_text = shorten(message.text, width=15, placeholder="...")
+        short_text = shorten(message.text, width=25, placeholder="...")
         print(f'{now} Bot receive message: {short_text}')
         parse_for_pager(match.group(1), abonent_id)
         bot.send_message(chat_id=chat_id, text=f'Recepied: {short_text}')
