@@ -54,7 +54,6 @@ def hfpager_bot():
         time.sleep(5)
 
 
-
 def parse_file(filename, text):
     short_text = shorten(text, width=25, placeholder="...")
     if re.match(r'\d{6}-RO-0.+_' + str(my_id) + '.TXT', filename):
@@ -97,13 +96,14 @@ def parse_file(filename, text):
                          text=f'Message sent: {short_text}',
                          disable_notification=True)
 
+
 def detect_request(text):
     mesg_from = 0
     mesg_to = 0
     now = date_time_now()
 
-    parse_message = text.split('\n',maxsplit=1)[-1]
-    
+    parse_message = text.split('\n', maxsplit=1)[-1]
+
     # получаем id адресатов
     match = re.search(r'^(\d{1,5}) \(\d+\) > (\d+).*', text)
     if match:
@@ -114,27 +114,29 @@ def detect_request(text):
     match = re.search(r'^=x(-{0,1}\d{1,2}\.\d{1,6}),(-{0,1}\d{1,3}\.\d{1,6})',
                       parse_message)
     if match:
-        mlat =match[1]
-        mlon =match[2]
+        mlat = match[1]
+        mlon = match[2]
         message = f'https://www.openstreetmap.org/?mlat={mlat}&mlon={mlon}&zoom=12'
-        print(f'{now} HFpager -> MapLink: {message}') 
+        print(f'{now} HFpager -> MapLink: {message}')
         bot.send_message(chat_id=chat_id, text=message)
 
     # парсим =w{lat},{lon}: weather -> hf
     match = re.search(r'^=w(-{0,1}\d{1,2}\.\d{1,6}),(-{0,1}\d{1,3}\.\d{1,6})',
                       parse_message)
     if match and mesg_to == str(my_id):
-        mlat =match[1]
-        mlon =match[2]
+        mlat = match[1]
+        mlon = match[2]
         print(f'{now} HFpager -> Weather: {mlat} {mlon}')
         bot.send_message(chat_id=chat_id,
                          text=f'{now} HFpager -> {mesg_from} Weather in: {mlat} {mlon}')
         weather = get_weather(mlat, mlon)
         pager_transmit(weather, mesg_from, 1)
-    
+
 
 def get_weather(lat, lon):
-    url = f'https://api.openweathermap.org/data/2.5/onecall?lat={lat}&lon={lon}&exclude=minutely,hourly&appid={owm_api_key}&lang=ru&units=metric'
+    url = ('https://api.openweathermap.org/data/2.5/onecall?'
+           f'lat={lat}&lon={lon}&exclude=minutely,hourly&appid={owm_api_key}'
+           '&lang=ru&units=metric')
     resp = requests.get(url)
     data = resp.json()
     weather = ''
@@ -146,20 +148,21 @@ def get_weather(lat, lon):
         wind_gust = day['wind_gust']
         weather_cond = day['weather'][0]['description']
         wind_direct = get_wind_direction(day['wind_deg'])
-        weather += f'{date} {weather_cond} {temp_min:.0f}-{temp_max:.0f}°C {wind_direct} {wind_speed:.0f}-{wind_gust:.0f}м/с\n'
+        weather += (f'{date} {weather_cond} {temp_min:.0f}-{temp_max:.0f}°C '
+                    f'{wind_direct} {wind_speed:.0f}-{wind_gust:.0f}м/с\n')
     return weather
 
 
 def get_wind_direction(deg):
-    l = ['С ','СВ',' В','ЮВ','Ю ','ЮЗ',' З','СЗ']
-    for i in range(0,8):
+    direction = ['С ', 'СВ', ' В', 'ЮВ', 'Ю ', 'ЮЗ', ' З', 'СЗ']
+    for i in range(0, 8):
         step = 45.
         min = i*step - 45/2.
         max = i*step + 45/2.
         if i == 0 and deg > 360-45/2.:
             deg = deg - 360
         if deg >= min and deg <= max:
-            res = l[i]
+            res = direction[i]
             break
     return res
 
@@ -173,7 +176,7 @@ def parse_for_pager(message, abonent_id):
         message = match.group(2)
 
     # сообщение начинается с ! -> бит повтора 1
-    match =  re.match(r'^!(.+)', message)
+    match = re.match(r'^!(.+)', message)
     if match:
         repeat = 1
         message = match.group(1)
@@ -181,6 +184,7 @@ def parse_for_pager(message, abonent_id):
         repeat = 0
 
     pager_transmit(message, abonent_id, repeat)
+
 
 def pager_transmit(message, abonent_id, repeat):
     now = date_time_now()
@@ -195,6 +199,7 @@ def pager_transmit(message, abonent_id, repeat):
         f'--es "android.intent.extra.SUBJECT" "Flags:1,{repeat}"',
         stdout=subprocess.PIPE, shell=True)
     out = proc.stdout.read()
+    return out
 
 
 bot = telebot.TeleBot(token)
@@ -216,18 +221,19 @@ def send_welcome(message):
 def echo_message(message):
     now = date_time_now()
     # обрабатываем начинающиеся с >
-    print(message)
-    match = re.match(r'^>(.+)', message.text)
-    if match:
-        short_text = shorten(message.text, width=25, placeholder="...")
-        print(f'{now} Bot receive message: {short_text}')
-        parse_for_pager(match.group(1), abonent_id)
-        bot.send_message(chat_id=chat_id, text=f'Recepied: {short_text}')
+    # print(message)
+    if message.date > start_time:
+        match = re.match(r'^>(.+)', message.text)
+        if match:
+            short_text = shorten(message.text, width=25, placeholder="...")
+            print(f'{now} Bot receive message: {short_text}')
+            parse_for_pager(match.group(1), abonent_id)
+            bot.send_message(chat_id=chat_id, text=f'Recepied: {short_text}')
 
 
 if __name__ == "__main__":
     name = "WEB->HFpager"
-    start_time = date_time_now()
+    start_time = int(time.time())
     to_radio = Thread(target=bot_polling)
     to_web = Thread(target=hfpager_bot)
     to_radio.start()
