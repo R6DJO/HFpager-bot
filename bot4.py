@@ -116,7 +116,8 @@ def detect_request(text):
     if match:
         mlat = match[1]
         mlon = match[2]
-        message = f'https://www.openstreetmap.org/?mlat={mlat}&mlon={mlon}&zoom=12'
+        message = ('https://www.openstreetmap.org/?'
+                   f'mlat={mlat}&mlon={mlon}&zoom=12')
         print(f'{now} HFpager -> MapLink: {message}')
         bot.send_message(chat_id=chat_id, text=message)
 
@@ -128,7 +129,8 @@ def detect_request(text):
         mlon = match[2]
         print(f'{now} HFpager -> Weather: {mlat} {mlon}')
         bot.send_message(chat_id=chat_id,
-                         text=f'{now} HFpager -> {mesg_from} Weather in: {mlat} {mlon}')
+                         text=(f'{now} HFpager -> {mesg_from} '
+                               'Weather in: {mlat} {mlon}'))
         weather = get_weather(mlat, mlon)
         pager_transmit(weather, mesg_from, 1)
 
