@@ -216,6 +216,7 @@ def send_welcome(message):
 def echo_message(message):
     now = date_time_now()
     # обрабатываем начинающиеся с >
+    print(message)
     match = re.match(r'^>(.+)', message.text)
     if match:
         short_text = shorten(message.text, width=25, placeholder="...")
@@ -226,6 +227,7 @@ def echo_message(message):
 
 if __name__ == "__main__":
     name = "WEB->HFpager"
+    start_time = date_time_now()
     to_radio = Thread(target=bot_polling)
     to_web = Thread(target=hfpager_bot)
     to_radio.start()
