@@ -130,7 +130,7 @@ def detect_request(text):
         print(f'{now} HFpager -> Weather: {mlat} {mlon}')
         bot.send_message(chat_id=chat_id,
                          text=(f'{now} HFpager -> {mesg_from} '
-                               'Weather in: {mlat} {mlon}'))
+                               f'Weather in: {mlat} {mlon}'))
         weather = get_weather(mlat, mlon)
         pager_transmit(weather, mesg_from, 1)
 
