@@ -47,7 +47,7 @@ def hfpager_bot():
             try:
                 for filename in os.scandir(last_dir):
                     # path_file = os.path.join(last_dir, filename)
-                    if os.stat(filename).st_ctime > nowt - 5:
+                    if os.stat(filename.path).st_ctime > nowt - 5:
                         mesg = open(str(filename.path), 'r',
                                     encoding='cp1251')
                         text = mesg.read()
