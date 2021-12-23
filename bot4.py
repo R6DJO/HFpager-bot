@@ -238,11 +238,12 @@ def echo_message(message):
     # обрабатываем начинающиеся с >
     # print(message)
     if message.date > start_time:
-        match = re.match(r'^>(.+)', message.text)
+        reg = re.compile(f'^({my_id})*>(.+)')
+        match = re.match(reg, message.text)
         if match:
             short_text = shorten(message.text, width=25, placeholder="...")
             print(f'{now} Bot receive message: {short_text}')
-            parse_for_pager(match.group(1), abonent_id)
+            parse_for_pager(match.group(2), abonent_id)
             bot.send_message(chat_id=chat_id, text=f'Recepied: {short_text}')
 
 
