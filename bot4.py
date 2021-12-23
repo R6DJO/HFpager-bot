@@ -51,6 +51,7 @@ def hfpager_bot():
                         mesg = open(filename, 'r',
                                     encoding='cp1251')
                         text = mesg.read()
+                        print(filename.name)
                         parse_file(filename.name, text)
             except Exception as ex:
                 now = date_time_now()
