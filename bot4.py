@@ -33,18 +33,22 @@ def hfpager_bot():
     now = date_time_now()
     print(f'{now} HFpager message parsing is running')
     while True:
-        date = datetime.now()
+        # date = datetime.now()
         # msg_dir = '/data/data/com.termux/files/home/storage/shared/
         # Documents/HFpager/' + date.strftime("%Y-%m-%d") + '.MSG/'
-        date_now = date.strftime("%Y-%m-%d")
-        msg_dir = f'/storage/emulated/0/Documents/HFpager/{date_now}.MSG/'
+        # date_now = date.strftime("%Y-%m-%d")
+        # msg_dir = f'/storage/emulated/0/Documents/HFpager/{date_now}.MSG/'
+        pager_dir = '/storage/emulated/0/Documents/HFpager/'
+        msg_dirs = [f.path for f in os.scandir(pager_dir)
+                    if f.is_dir() and re.match(r'.*\.MSG', f.name)]
+        last_dir = sorted(msg_dirs)[-1]
         nowt = time.time()
-        if os.path.isdir(msg_dir):
+        if os.path.isdir(last_dir):
             try:
-                for filename in os.listdir(msg_dir):
-                    path_file = os.path.join(msg_dir, filename)
+                for filename in os.listdir(last_dir):
+                    path_file = os.path.join(last_dir, filename)
                     if os.stat(path_file).st_ctime > nowt - 5:
-                        mesg = open(msg_dir + filename, 'r',
+                        mesg = open(last_dir + filename, 'r',
                                     encoding='cp1251')
                         text = mesg.read()
                         parse_file(filename, text)
@@ -176,9 +180,9 @@ def get_wind_direction(deg):
         if i == 0 and deg > 360-45/2.:
             deg = deg - 360
         if deg >= min and deg <= max:
-            res = direction[i]
+            wind = direction[i]
             break
-    return res
+    return wind
 
 
 def parse_for_pager(message, abonent_id):
@@ -204,7 +208,7 @@ def pager_transmit(message, abonent_id, repeat):
     now = date_time_now()
     print(f'{now} HFpager send to ID:{abonent_id} repeat:{repeat} '
           f'message:\n{message.strip()}')
-    proc = subprocess.Popen(
+    subprocess.Popen(
         'am start --user 0 '
         '-n ru.radial.nogg.hfpager/ru.radial.full.hfpager.MainActivity '
         '-a "android.intent.action.SEND" '
@@ -213,8 +217,8 @@ def pager_transmit(message, abonent_id, repeat):
         f'--ei "android.intent.extra.INDEX" "{abonent_id}" '
         f'--es "android.intent.extra.SUBJECT" "Flags:1,{repeat}"',
         stdout=subprocess.PIPE, shell=True)
-    out = proc.stdout.read()
-    return out
+    # out = proc.stdout.read()
+    # return out
 
 
 bot = telebot.TeleBot(token)
