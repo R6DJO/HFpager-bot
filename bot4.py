@@ -47,11 +47,11 @@ def hfpager_bot():
             try:
                 for filename in os.scandir(last_dir):
                     # path_file = os.path.join(last_dir, filename)
-                    if os.stat(filename.path).st_ctime > nowt - 5:
-                        mesg = open(str(filename.path), 'r',
+                    if os.stat(filename).st_ctime > nowt - 5:
+                        mesg = open(filename), 'r',
                                     encoding='cp1251')
                         text = mesg.read()
-                        parse_file(filename, text)
+                        parse_file(filename.name, text)
             except Exception as ex:
                 now = date_time_now()
                 print(f'{now} HFpager send/receive message error: {ex}')
