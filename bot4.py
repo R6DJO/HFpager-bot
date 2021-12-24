@@ -61,9 +61,10 @@ def hfpager_bot():
 def send_edit_msg(key, message):
     text = message.split('\n', maxsplit=1)[-1]
     if text in bot_recieve_dict:
-        bot.edit_message_text(
+        message = bot.edit_message_text(
             chat_id=chat_id, text=message,
             message_id=bot_recieve_dict[text]['message_id'])
+        message_dict[key] = {'message_id': message.message_id}
         del bot_recieve_dict[text]
     elif key in message_dict:
         bot.edit_message_text(chat_id=chat_id, text=message,
