@@ -213,8 +213,9 @@ def parse_for_pager(message, abonent_id):
 
 def pager_transmit(message, abonent_id, repeat):
     now = date_time_now()
+    short_text = shorten(message, width=35, placeholder="...")
     print(f'{now} HFpager send to ID:{abonent_id} repeat:{repeat} '
-          f'message:\n{message.strip()}')
+          f'message:{short_text}')
     subprocess.Popen(
         'am start --user 0 '
         '-n ru.radial.nogg.hfpager/ru.radial.full.hfpager.MainActivity '
