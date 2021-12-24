@@ -16,6 +16,7 @@ from config import abonent_id, callsign, chat_id, my_id, token, owm_api_key
 
 message_dict = {}
 
+
 def date_time_now():
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     return now
@@ -64,14 +65,14 @@ def hfpager_bot():
 
 def send_edit_msg(key, message):
     if key in message_dict:
-        print('Get:',key, message_dict[key]['message_id'])
+        print('Get:', key, message_dict[key]['message_id'])
         bot.edit_message_text(chat_id=chat_id, text=message,
                               message_id=message_dict[key]['message_id'])
     else:
         message = bot.send_message(chat_id=chat_id,
                                    text=message)
-        message_dict[key]['message_id']=message.message_id
-        print('Add:',key, message_dict[key]['message_id'])
+        message_dict[key] = {'message_id': message.message_id}
+        print('Add:', key, message_dict[key]['message_id'])
 
 
 def parse_file(dir_filename, text):
