@@ -256,7 +256,7 @@ def echo_message(message):
             parse_for_pager(match.group(2) + match.group(3), abonent_id)
             message = bot.send_message(chat_id=chat_id,
                                        text=short_text)
-            bot_recieve_dict[match.group(2).strip()] = {
+            bot_recieve_dict[match.group(3).strip()] = {
                 'message_id': message.message_id
             }
             print(match.group(3).strip())
