@@ -63,7 +63,7 @@ def send_edit_msg(key, message):
     if text in bot_recieve_dict:
         bot.edit_message_text(
             chat_id=chat_id, text=message,
-            message_id=bot_recieve_dict[message]['message_id'])
+            message_id=bot_recieve_dict[text]['message_id'])
         del bot_recieve_dict[text]
     elif key in message_dict:
         bot.edit_message_text(chat_id=chat_id, text=message,
