@@ -248,7 +248,7 @@ def echo_message(message):
     now = date_time_now()
     # обрабатываем начинающиеся с >
     if message.date > start_time:
-        reg = re.compile(f'^({my_id})*>(.+)')
+        reg = re.compile(f'^({my_id}' + ')*>\\d{0,5}(.+)')
         match = re.match(reg, message.text)
         if match:
             short_text = shorten(message.text, width=35, placeholder="...")
