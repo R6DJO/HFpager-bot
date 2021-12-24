@@ -16,6 +16,7 @@ from config import abonent_id, callsign, chat_id, my_id, token, owm_api_key
 message_dict = {}
 bot_recieve_dict = {}
 
+
 def date_time_now():
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     return now
@@ -58,10 +59,12 @@ def hfpager_bot():
 
 
 def send_edit_msg(key, message):
-    if message in bot_recieve_dict:
-        bot.edit_message_text(chat_id=chat_id, text=message,
-                              message_id=bot_recieve_dict[message]['message_id'])
-        del bot_recieve_dict[message]
+    text = message.split('\n', maxsplit=1)[-1]
+    if text in bot_recieve_dict:
+        bot.edit_message_text(
+            chat_id=chat_id, text=message,
+            message_id=bot_recieve_dict[message]['message_id'])
+        del bot_recieve_dict[text]
     elif key in message_dict:
         bot.edit_message_text(chat_id=chat_id, text=message,
                               message_id=message_dict[key]['message_id'])
@@ -254,7 +257,6 @@ def echo_message(message):
             bot_recieve_dict[match.group(2).strip()] = {
                 'message_id': message.message_id
             }
-            
 
 
 if __name__ == "__main__":
