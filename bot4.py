@@ -140,8 +140,8 @@ def detect_request(text):
         mlon = match[2]
         print(f'{now} HFpager -> Weather: {mlat} {mlon}')
         bot.send_message(chat_id=chat_id,
-                         text=(f'{now} HFpager -> {mesg_from} '
-                               f'Weather in: {mlat} {mlon}'))
+                         text=(f'{my_id}>{mesg_from} '
+                               f'weather in: {mlat} {mlon}'))
         weather = get_weather(mlat, mlon)
         split = smart_split(weather, 250)
         for part in split:
@@ -154,7 +154,6 @@ def get_weather(lat, lon):
            '&lang=ru&units=metric')
     resp = requests.get(url)
     data = resp.json()
-    print(data)
     weather = ''
     if 'cod' in data:
         now = date_time_now()
