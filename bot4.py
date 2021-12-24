@@ -1,6 +1,5 @@
 #!/bin/python
 # -*- coding: utf-8 -*-
-# from fileinput import filename
 import re
 import telebot
 import time
@@ -37,42 +36,35 @@ def hfpager_bot():
     now = date_time_now()
     print(f'{now} HFpager message parsing is running')
     while True:
-        # date = datetime.now()
-        # msg_dir = '/data/data/com.termux/files/home/storage/shared/
-        # Documents/HFpager/' + date.strftime("%Y-%m-%d") + '.MSG/'
-        # date_now = date.strftime("%Y-%m-%d")
-        # msg_dir = f'/storage/emulated/0/Documents/HFpager/{date_now}.MSG/'
+        # msg_dir = '/data/data/com.termux/files/home/storage/shared/'
+        #           'Documents/HFpager/'
         pager_dir = '/storage/emulated/0/Documents/HFpager/'
         msg_dirs = [f.path for f in os.scandir(pager_dir)
                     if f.is_dir() and re.match(r'.*\.MSG', f.name)]
         last_dir = sorted(msg_dirs)[-1]
         nowt = time.time()
         if os.path.isdir(last_dir):
-            # try:
-            for filename in os.scandir(last_dir):
-                # path_file = os.path.join(last_dir, filename)
-                if os.stat(filename).st_ctime > nowt - 5:
-                    mesg = open(filename, 'r',
-                                encoding='cp1251')
-                    text = mesg.read()
-                    print(filename.path)
-                    parse_file(filename.path.replace(pager_dir, ''), text)
-            # except Exception as ex:
-            #     now = date_time_now()
-            #     print(f'{now} HFpager send/receive message error: {ex}')
+            try:
+                for filename in os.scandir(last_dir):
+                    if os.stat(filename).st_ctime > nowt - 5:
+                        mesg = open(filename, 'r',
+                                    encoding='cp1251')
+                        text = mesg.read()
+                        parse_file(filename.path.replace(pager_dir, ''), text)
+            except Exception as ex:
+                now = date_time_now()
+                print(f'{now} HFpager send/receive message error: {ex}')
         time.sleep(5)
 
 
 def send_edit_msg(key, message):
     if key in message_dict:
-        print('Get:', key, message_dict[key]['message_id'])
         bot.edit_message_text(chat_id=chat_id, text=message,
                               message_id=message_dict[key]['message_id'])
     else:
         message = bot.send_message(chat_id=chat_id,
                                    text=message)
         message_dict[key] = {'message_id': message.message_id}
-        print('Add:', key, message_dict[key]['message_id'])
 
 
 def parse_file(dir_filename, text):
@@ -81,7 +73,7 @@ def parse_file(dir_filename, text):
     time = filename.split('-')[0]
     key = f'{date} {time}'
     now = date_time_now()
-    short_text = shorten(text, width=25, placeholder="...")
+    short_text = shorten(text, width=35, placeholder="...")
     if re.match(r'\d{6}-RO-0.+_' + str(my_id) + '.TXT', filename):
         print(f'{now} HFpager private message received: {text}')
         bot.send_message(chat_id=chat_id,
@@ -101,37 +93,25 @@ def parse_file(dir_filename, text):
         print(f'{now} HFpager message sent and acknowledgment '
               f'received: {short_text}')
         send_edit_msg(key, f'√ {text}')
-        # bot.send_message(chat_id=chat_id, text='Message sent and '
-        #                  f'acknowledgment received: {short_text}',
-        #                  disable_notification=True)
     elif re.match(r'\d{6}-S[1-9]-\dN', filename):
         print(f'{now} HFpager message sent and not '
               f'acknowledgment received: {short_text}')
         send_edit_msg(key, f'X {text}')
-        # bot.send_message(chat_id=chat_id, text='Message sent and not '
-        #                  f'acknowledgment received: {short_text}',
-        #                  disable_notification=True)
     elif re.match(r'\d{6}-S[1-9]-\d0', filename):
         print(f'{now} HFpager message sent: {short_text}')
         send_edit_msg(key, f'{text}')
-        # bot.send_message(chat_id=chat_id,
-        #                  text=f'Message sent: {short_text}',
-        #                  disable_notification=True)
 
 
 def detect_request(text):
     mesg_from = 0
     mesg_to = 0
     now = date_time_now()
-
     parse_message = text.split('\n', maxsplit=1)[-1]
-
     # получаем id адресатов
     match = re.search(r'^(\d{1,5}) \(\d+\) > (\d+).*', text)
     if match:
         mesg_from = match[1]
         mesg_to = match[2]
-
     # парсим =x{lat},{lon}: map_link -> web
     match = re.search(r'^=x(-{0,1}\d{1,2}\.\d{1,6}),(-{0,1}\d{1,3}\.\d{1,6})',
                       parse_message)
@@ -142,7 +122,6 @@ def detect_request(text):
                    f'mlat={mlat}&mlon={mlon}&zoom=12')
         print(f'{now} HFpager -> MapLink: {message}')
         bot.send_message(chat_id=chat_id, text=message)
-
     # парсим =w{lat},{lon}: weather -> hf
     match = re.search(r'^=w(-{0,1}\d{1,2}\.\d{1,6}),(-{0,1}\d{1,3}\.\d{1,6})',
                       parse_message)
@@ -259,7 +238,6 @@ def send_welcome(message):
 def echo_message(message):
     now = date_time_now()
     # обрабатываем начинающиеся с >
-    # print(message)
     if message.date > start_time:
         reg = re.compile(f'^({my_id})*>(.+)')
         match = re.match(reg, message.text)
