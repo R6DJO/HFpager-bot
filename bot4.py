@@ -47,7 +47,7 @@ def hfpager_bot():
         if os.path.isdir(last_dir):
             try:
                 for filename in os.scandir(last_dir):
-                    if os.stat(filename).st_ctime > nowt - 5:
+                    if os.stat(filename).st_ctime > nowt - 6:
                         mesg = open(filename, 'r',
                                     encoding='cp1251')
                         text = mesg.read()
@@ -59,20 +59,21 @@ def hfpager_bot():
 
 
 def send_edit_msg(key, message):
-    text = message.split('\n', maxsplit=1)[-1]
+    text = message.split('\n', maxsplit=1)[-1].strip()
     if text in bot_recieve_dict:
-        message = bot.edit_message_text(
+        result = bot.edit_message_text(
             chat_id=chat_id, text=message,
             message_id=bot_recieve_dict[text]['message_id'])
-        message_dict[key] = {'message_id': message.message_id}
+        message_dict[key] = {
+            'message_id': bot_recieve_dict[text]['message_id']}
         del bot_recieve_dict[text]
     elif key in message_dict:
         bot.edit_message_text(chat_id=chat_id, text=message,
                               message_id=message_dict[key]['message_id'])
     else:
-        message = bot.send_message(chat_id=chat_id,
-                                   text=message)
-        message_dict[key] = {'message_id': message.message_id}
+        result = bot.send_message(chat_id=chat_id,
+                                  text=message)
+        message_dict[key] = {'message_id': result.message_id}
 
 
 def parse_file(dir_filename, text):
@@ -252,7 +253,11 @@ def echo_message(message):
         if match:
             short_text = shorten(message.text, width=35, placeholder="...")
             print(f'{now} Bot receive message: {short_text}')
-            parse_for_pager(match.group(2) + match.group(3), abonent_id)
+            if match.group(2):
+                text_parse = match.group(2) + match.group(3)
+            else:
+                text_parse = match.group(3)
+            parse_for_pager(text_parse, abonent_id)
             message = bot.send_message(chat_id=chat_id,
                                        text=short_text)
             bot_recieve_dict[match.group(3).strip()] = {
