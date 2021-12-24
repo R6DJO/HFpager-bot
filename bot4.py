@@ -61,9 +61,10 @@ def hfpager_bot():
 def send_edit_msg(key, message):
     text = message.split('\n', maxsplit=1)[-1]
     if text in bot_recieve_dict:
-        bot.edit_message_text(
+        message = bot.edit_message_text(
             chat_id=chat_id, text=message,
             message_id=bot_recieve_dict[text]['message_id'])
+        message_dict[key] = {'message_id': message.message_id}
         del bot_recieve_dict[text]
     elif key in message_dict:
         bot.edit_message_text(chat_id=chat_id, text=message,
@@ -246,17 +247,16 @@ def echo_message(message):
     now = date_time_now()
     # обрабатываем начинающиеся с >
     if message.date > start_time:
-        reg = re.compile(f'^({my_id})*>(.+)')
+        reg = re.compile(f'^({my_id}' + ')*>(\\d{1,5})*(.+)')
         match = re.match(reg, message.text)
         if match:
             short_text = shorten(message.text, width=35, placeholder="...")
             print(f'{now} Bot receive message: {short_text}')
-            parse_for_pager(match.group(2), abonent_id)
+            parse_for_pager(match.group(2) + match.group(3), abonent_id)
             message = bot.send_message(chat_id=chat_id,
                                        text=short_text)
-            bot_recieve_dict[match.group(2).strip()] = {
-                'message_id': message.message_id
-            }
+            bot_recieve_dict[match.group(3).strip()] = {
+                'message_id': message.message_id}
 
 
 if __name__ == "__main__":
