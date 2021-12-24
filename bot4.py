@@ -248,12 +248,12 @@ def echo_message(message):
     now = date_time_now()
     # обрабатываем начинающиеся с >
     if message.date > start_time:
-        reg = re.compile(f'^({my_id}' + ')*>\\d{0,5}(.+)')
+        reg = re.compile(f'^({my_id}' + ')*>(\\d{1,5})*(.+)')
         match = re.match(reg, message.text)
         if match:
             short_text = shorten(message.text, width=35, placeholder="...")
             print(f'{now} Bot receive message: {short_text}')
-            parse_for_pager(match.group(2), abonent_id)
+            parse_for_pager(match.group(2) + match.group(3), abonent_id)
             message = bot.send_message(chat_id=chat_id,
                                        text=short_text)
             bot_recieve_dict[match.group(2).strip()] = {
