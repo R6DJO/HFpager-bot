@@ -1,5 +1,6 @@
 #!/bin/python
 # -*- coding: utf-8 -*-
+# from fileinput import filename
 import re
 import telebot
 import time
@@ -10,8 +11,10 @@ from datetime import datetime
 from textwrap import shorten
 import requests
 
-from config import abonent_id, chat_id, my_id, token, owm_api_key
+from config import abonent_id, callsign, chat_id, my_id, token, owm_api_key
 
+
+message_dict = {}
 
 def date_time_now():
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -51,15 +54,24 @@ def hfpager_bot():
                         mesg = open(filename, 'r',
                                     encoding='cp1251')
                         text = mesg.read()
-                        print(filename.name)
-                        parse_file(filename.name, text)
+                        print(filename.path)
+                        parse_file(filename.path.replace(pager_dir, ''), text)
             except Exception as ex:
                 now = date_time_now()
                 print(f'{now} HFpager send/receive message error: {ex}')
         time.sleep(5)
 
 
-def parse_file(filename, text):
+def parse_file(dir_filename, text):
+    dirname, filename = dir_filename.split('/')
+    date = dirname.split('.')[0]
+    time = filename.split('-')[0]
+    key = f'{date} {time}'
+    if key in message_dict:
+        print('Есть в базе', message_dict[key]['text'])
+    else:
+        print('Нет в базе, запомнили')
+        message_dict[key]={'text': text}
     short_text = shorten(text, width=25, placeholder="...")
     if re.match(r'\d{6}-RO-0.+_' + str(my_id) + '.TXT', filename):
         now = date_time_now()
@@ -173,6 +185,7 @@ def get_weather(lat, lon):
 
 
 def get_wind_direction(deg):
+    wind = ''
     direction = ['С ', 'СВ', 'В', 'ЮВ', 'Ю', 'ЮЗ', 'З', 'СЗ']
     for i in range(0, 8):
         step = 45.
@@ -228,7 +241,7 @@ bot = telebot.TeleBot(token)
 @bot.message_handler(commands=['help', 'start'])
 def send_welcome(message):
     bot.reply_to(message, f"""Привет, я HFpager Bot.
-Я отправляю сообщения с шлюза UB9WMS через HFpager ID:{my_id}\n
+Я отправляю сообщения с шлюза {callsign} через HFpager ID:{my_id}\n
 Как меня использовать:\n
 `>blah blah blah` - отправит _blah blah blah_ на ID:{abonent_id}\n
 `>123 blah blah blah` - отправит _blah blah blah_ на ID:_123_\n
