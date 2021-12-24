@@ -46,16 +46,16 @@ def hfpager_bot():
         last_dir = sorted(msg_dirs)[-1]
         nowt = time.time()
         if os.path.isdir(last_dir):
-            try:
-                for filename in os.scandir(last_dir):
-                    if os.stat(filename).st_ctime > nowt - 6:
-                        mesg = open(filename, 'r',
-                                    encoding='cp1251')
-                        text = mesg.read()
-                        parse_file(filename.path.replace(pager_dir, ''), text)
-            except Exception as ex:
-                now = date_time_now()
-                print(f'{now} HFpager send/receive message error: {ex}')
+            # try:
+            for filename in os.scandir(last_dir):
+                if os.stat(filename).st_ctime > nowt - 6:
+                    mesg = open(filename, 'r',
+                                encoding='cp1251')
+                    text = mesg.read()
+                    parse_file(filename.path.replace(pager_dir, ''), text)
+            # except Exception as ex:
+            #     now = date_time_now()
+            #     print(f'{now} HFpager send/receive message error: {ex}')
         time.sleep(5)
 
 
@@ -91,7 +91,7 @@ def parse_file(dir_filename, text):
         detect_request(text)
     elif re.match(r'\d{6}-RO-[2,3].+_' + str(my_id) + '.TXT', filename):
         print(f'{now} HFpager private message received and acknowledgment '
-              f'sent: {text}')
+              f'sent: {short_text}')
         bot.send_message(chat_id=chat_id, text=f'√ {text}')
         detect_request(text)
     elif re.match(r'\d{6}-R', filename):
