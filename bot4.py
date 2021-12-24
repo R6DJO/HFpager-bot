@@ -60,6 +60,7 @@ def hfpager_bot():
 
 def send_edit_msg(key, message):
     text = message.split('\n', maxsplit=1)[-1]
+    print(text)
     if text in bot_recieve_dict:
         message = bot.edit_message_text(
             chat_id=chat_id, text=message,
@@ -258,6 +259,7 @@ def echo_message(message):
             bot_recieve_dict[match.group(2).strip()] = {
                 'message_id': message.message_id
             }
+            print(match.group(2).strip())
 
 
 if __name__ == "__main__":
