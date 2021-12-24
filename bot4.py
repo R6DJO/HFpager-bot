@@ -64,11 +64,14 @@ def hfpager_bot():
 
 def send_edit_msg(key, message):
     if key in message_dict:
-        bot.edit_message_text(chat_id=chat_id, text=message, message_id=message_dict[key]['message_id'])
+        print('Get:',key, message_dict[key]['message_id'])
+        bot.edit_message_text(chat_id=chat_id, text=message,
+                              message_id=message_dict[key]['message_id'])
     else:
         message = bot.send_message(chat_id=chat_id,
                                    text=message)
         message_dict[key]['message_id']=message.message_id
+        print('Add:',key, message_dict[key]['message_id'])
 
 
 def parse_file(dir_filename, text):
