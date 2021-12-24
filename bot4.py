@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import re
 import telebot
+from telebot.util import smart_split
 import time
 import subprocess
 import os
@@ -142,7 +143,9 @@ def detect_request(text):
                          text=(f'{now} HFpager -> {mesg_from} '
                                f'Weather in: {mlat} {mlon}'))
         weather = get_weather(mlat, mlon)
-        pager_transmit(weather, mesg_from, 1)
+        split = smart_split(weather, 250)
+        for part in split:
+            pager_transmit(part, mesg_from, 1)
 
 
 def get_weather(lat, lon):
@@ -152,7 +155,7 @@ def get_weather(lat, lon):
     resp = requests.get(url)
     data = resp.json()
     weather = ''
-    for day in data['daily'][:2]:
+    for day in data['daily'][:3]:
         date = datetime.fromtimestamp(day['dt']).strftime('%m/%d')
         temp_min = day['temp']['min']
         temp_max = day['temp']['max']
@@ -215,7 +218,7 @@ def pager_transmit(message, abonent_id, repeat):
     now = date_time_now()
     short_text = shorten(message, width=35, placeholder="...")
     print(f'{now} HFpager send to ID:{abonent_id} repeat:{repeat} '
-          f'message:{short_text}')
+          f'message: {short_text}')
     subprocess.Popen(
         'am start --user 0 '
         '-n ru.radial.nogg.hfpager/ru.radial.full.hfpager.MainActivity '
