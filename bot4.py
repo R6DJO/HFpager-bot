@@ -154,30 +154,37 @@ def get_weather(lat, lon):
            '&lang=ru&units=metric')
     resp = requests.get(url)
     data = resp.json()
+    print(data)
     weather = ''
-    for day in data['daily'][:3]:
-        date = datetime.fromtimestamp(day['dt']).strftime('%m/%d')
-        temp_min = day['temp']['min']
-        temp_max = day['temp']['max']
-        clouds = day['clouds']
-        pop = day['pop']*100
-        wind_speed = day['wind_speed']
-        wind_gust = day['wind_gust']
-        weather_cond = day['weather'][0]['description']
-        wind_direct = get_wind_direction(day['wind_deg'])
-        weather += (f'{date} '
-                    f'Темп:{temp_min:.0f}…{temp_max:.0f}°C '
-                    f'Вет:{wind_direct} {wind_speed:.0f}…{wind_gust:.0f}м/с '
-                    f'{weather_cond} '
-                    f'Обл:{clouds}% Вер.ос:{pop:.0f}% ')
-        if 'rain' in day:
-            rain = day['rain']
-            weather += f'Дождь:{rain:.1f}мм '
-        if 'snow' in day:
-            rain = day['snow']
-            weather += f'Снег:{rain:.1f}мм '
-        weather += '\n'
-    return weather
+    if 'cod' in data:
+        now = date_time_now()
+        error = data['message']
+        print(f'{now} HFpager get weather error: {error}')
+        return 'Error in weather'
+    else:
+        for day in data['daily'][:3]:
+            date = datetime.fromtimestamp(day['dt']).strftime('%m/%d')
+            temp_min = day['temp']['min']
+            temp_max = day['temp']['max']
+            clouds = day['clouds']
+            pop = day['pop']*100
+            wind_speed = day['wind_speed']
+            wind_gust = day['wind_gust']
+            weather_cond = day['weather'][0]['description']
+            wind_direct = get_wind_direction(day['wind_deg'])
+            weather += (f'{date} '
+                        f'Темп:{temp_min:.0f}…{temp_max:.0f}°C '
+                        f'Вет:{wind_direct} {wind_speed:.0f}…'
+                        f'{wind_gust:.0f}м/с {weather_cond} '
+                        f'Обл:{clouds}% Вер.ос:{pop:.0f}% ')
+            if 'rain' in day:
+                rain = day['rain']
+                weather += f'Дождь:{rain:.1f}мм '
+            if 'snow' in day:
+                rain = day['snow']
+                weather += f'Снег:{rain:.1f}мм '
+            weather += '\n'
+        return weather
 
 
 def get_wind_direction(deg):
