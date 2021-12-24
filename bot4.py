@@ -62,56 +62,57 @@ def hfpager_bot():
         time.sleep(5)
 
 
+def send_edit_msg(key, message):
+    if key in message_dict:
+        bot.edit_message_text(chat_id=chat_id, text=message, message_id=message_dict[key]['message_id'])
+    else:
+        message = bot.send_message(chat_id=chat_id,
+                                   text=message)
+        message_dict[key]['message_id']=message.message_id
+
+
 def parse_file(dir_filename, text):
     dirname, filename = dir_filename.split('/')
     date = dirname.split('.')[0]
     time = filename.split('-')[0]
     key = f'{date} {time}'
-    if key in message_dict:
-        print('Есть в базе', message_dict[key]['text'])
-    else:
-        print('Нет в базе, запомнили')
-        message_dict[key]={'text': text}
+    now = date_time_now()
     short_text = shorten(text, width=25, placeholder="...")
     if re.match(r'\d{6}-RO-0.+_' + str(my_id) + '.TXT', filename):
-        now = date_time_now()
         print(f'{now} HFpager private message received: {text}')
         bot.send_message(chat_id=chat_id,
-                         text=f'Private message received: {text}')
+                         text=text)
         detect_request(text)
     elif re.match(r'\d{6}-RO-[2,3].+_' + str(my_id) + '.TXT', filename):
-        now = date_time_now()
         print(f'{now} HFpager private message received and acknowledgment '
               f'sent: {text}')
-        bot.send_message(chat_id=chat_id, text='Private message received '
-                         f'and acknowledgment sent: {text}')
+        bot.send_message(chat_id=chat_id, text=f'√ {text}')
         detect_request(text)
     elif re.match(r'\d{6}-R', filename):
-        now = date_time_now()
         print(f'{now} HFpager message intercepted: {text}')
-        bot.send_message(chat_id=chat_id, text=f'Message intercepted: {text}',
+        bot.send_message(chat_id=chat_id, text=text,
                          disable_notification=True)
         detect_request(text)
     elif re.match(r'\d{6}-S[1-9]-\dP', filename):
-        now = date_time_now()
         print(f'{now} HFpager message sent and acknowledgment '
               f'received: {short_text}')
-        bot.send_message(chat_id=chat_id, text='Message sent and '
-                         f'acknowledgment received: {short_text}',
-                         disable_notification=True)
+        send_edit_msg(key, f'√ {text}')
+        # bot.send_message(chat_id=chat_id, text='Message sent and '
+        #                  f'acknowledgment received: {short_text}',
+        #                  disable_notification=True)
     elif re.match(r'\d{6}-S[1-9]-\dN', filename):
-        now = date_time_now()
         print(f'{now} HFpager message sent and not '
               f'acknowledgment received: {short_text}')
-        bot.send_message(chat_id=chat_id, text='Message sent and not '
-                         f'acknowledgment received: {short_text}',
-                         disable_notification=True)
+        send_edit_msg(key, f'X {text}')
+        # bot.send_message(chat_id=chat_id, text='Message sent and not '
+        #                  f'acknowledgment received: {short_text}',
+        #                  disable_notification=True)
     elif re.match(r'\d{6}-S[1-9]-\d0', filename):
-        now = date_time_now()
         print(f'{now} HFpager message sent: {short_text}')
-        bot.send_message(chat_id=chat_id,
-                         text=f'Message sent: {short_text}',
-                         disable_notification=True)
+        send_edit_msg(key, f'{text}')
+        # bot.send_message(chat_id=chat_id,
+        #                  text=f'Message sent: {short_text}',
+        #                  disable_notification=True)
 
 
 def detect_request(text):
