@@ -259,7 +259,7 @@ def echo_message(message):
             bot_recieve_dict[match.group(2).strip()] = {
                 'message_id': message.message_id
             }
-            print(match.group(2).strip())
+            print(match.group(3).strip())
 
 
 if __name__ == "__main__":
