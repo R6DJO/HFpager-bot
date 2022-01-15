@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import re
 import telebot
+from telebot.util import smart_split
 import time
 import subprocess
 import os
@@ -35,6 +36,11 @@ def bot_polling():
 
 def hfpager_bot():
     now = date_time_now()
+    print(f'{now} HFpager run')
+    subprocess.Popen(
+        'am start --user 0 '
+        '-n ru.radial.nogg.hfpager/ru.radial.full.hfpager.MainActivity ',
+        stdout=subprocess.PIPE, shell=True)
     print(f'{now} HFpager message parsing is running')
     while True:
         # msg_dir = '/data/data/com.termux/files/home/storage/shared/'
@@ -90,7 +96,7 @@ def parse_file(dir_filename, text):
         detect_request(text)
     elif re.match(r'\d{6}-RO-[2,3].+_' + str(my_id) + '.TXT', filename):
         print(f'{now} HFpager private message received and acknowledgment '
-              f'sent: {text}')
+              f'sent: {short_text}')
         bot.send_message(chat_id=chat_id, text=f'√ {text}')
         detect_request(text)
     elif re.match(r'\d{6}-R', filename):
@@ -139,10 +145,12 @@ def detect_request(text):
         mlon = match[2]
         print(f'{now} HFpager -> Weather: {mlat} {mlon}')
         bot.send_message(chat_id=chat_id,
-                         text=(f'{now} HFpager -> {mesg_from} '
-                               f'Weather in: {mlat} {mlon}'))
+                         text=(f'{my_id}>{mesg_from} '
+                               f'weather in: {mlat} {mlon}'))
         weather = get_weather(mlat, mlon)
-        pager_transmit(weather, mesg_from, 1)
+        split = smart_split(weather, 250)
+        for part in split:
+            pager_transmit(part, mesg_from, 1)
 
 
 def get_weather(lat, lon):
@@ -152,29 +160,35 @@ def get_weather(lat, lon):
     resp = requests.get(url)
     data = resp.json()
     weather = ''
-    for day in data['daily'][:2]:
-        date = datetime.fromtimestamp(day['dt']).strftime('%m/%d')
-        temp_min = day['temp']['min']
-        temp_max = day['temp']['max']
-        clouds = day['clouds']
-        pop = day['pop']*100
-        wind_speed = day['wind_speed']
-        wind_gust = day['wind_gust']
-        weather_cond = day['weather'][0]['description']
-        wind_direct = get_wind_direction(day['wind_deg'])
-        weather += (f'{date} '
-                    f'Темп:{temp_min:.0f}…{temp_max:.0f}°C '
-                    f'Вет:{wind_direct} {wind_speed:.0f}…{wind_gust:.0f}м/с '
-                    f'{weather_cond} '
-                    f'Обл:{clouds}% Вер.ос:{pop:.0f}% ')
-        if 'rain' in day:
-            rain = day['rain']
-            weather += f'Дождь:{rain:.1f}мм '
-        if 'snow' in day:
-            rain = day['snow']
-            weather += f'Снег:{rain:.1f}мм '
-        weather += '\n'
-    return weather
+    if 'cod' in data:
+        now = date_time_now()
+        error = data['message']
+        print(f'{now} HFpager get weather error: {error}')
+        return 'Error in weather'
+    else:
+        for day in data['daily'][:3]:
+            date = datetime.fromtimestamp(day['dt']).strftime('%m/%d')
+            temp_min = day['temp']['min']
+            temp_max = day['temp']['max']
+            clouds = day['clouds']
+            pop = day['pop']*100
+            wind_speed = day['wind_speed']
+            wind_gust = day['wind_gust']
+            weather_cond = day['weather'][0]['description']
+            wind_direct = get_wind_direction(day['wind_deg'])
+            weather += (f'{date} '
+                        f'Темп:{temp_min:.0f}…{temp_max:.0f}°C '
+                        f'Вет:{wind_direct} {wind_speed:.0f}…'
+                        f'{wind_gust:.0f}м/с {weather_cond} '
+                        f'Обл:{clouds}% Вер.ос:{pop:.0f}% ')
+            if 'rain' in day:
+                rain = day['rain']
+                weather += f'Дождь:{rain:.1f}мм '
+            if 'snow' in day:
+                rain = day['snow']
+                weather += f'Снег:{rain:.1f}мм '
+            weather += '\n'
+        return weather
 
 
 def get_wind_direction(deg):
@@ -215,7 +229,7 @@ def pager_transmit(message, abonent_id, repeat):
     now = date_time_now()
     short_text = shorten(message, width=35, placeholder="...")
     print(f'{now} HFpager send to ID:{abonent_id} repeat:{repeat} '
-          f'message:{short_text}')
+          f'message: {short_text}')
     subprocess.Popen(
         'am start --user 0 '
         '-n ru.radial.nogg.hfpager/ru.radial.full.hfpager.MainActivity '
