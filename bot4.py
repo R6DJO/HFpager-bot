@@ -52,7 +52,6 @@ def hfpager_bot():
             last_dir = sorted(msg_dirs)[-1]
             nowt = time.time()
             if os.path.isdir(last_dir):
-            
                 for filename in os.scandir(last_dir):
                     if os.stat(filename).st_ctime > nowt - 6:
                         mesg = open(filename, 'r',
