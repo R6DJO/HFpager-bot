@@ -36,6 +36,11 @@ def bot_polling():
 
 def hfpager_bot():
     now = date_time_now()
+    print(f'{now} HFpager run')
+    subprocess.Popen(
+        'am start --user 0 '
+        '-n ru.radial.nogg.hfpager/ru.radial.full.hfpager.MainActivity ',
+        stdout=subprocess.PIPE, shell=True)
     print(f'{now} HFpager message parsing is running')
     while True:
         try:
