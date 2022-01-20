@@ -38,24 +38,25 @@ def hfpager_bot():
     now = date_time_now()
     print(f'{now} HFpager message parsing is running')
     while True:
-        # msg_dir = '/data/data/com.termux/files/home/storage/shared/'
-        #           'Documents/HFpager/'
-        pager_dir = '/storage/emulated/0/Documents/HFpager/'
-        msg_dirs = [f.path for f in os.scandir(pager_dir)
-                    if f.is_dir() and re.match(r'.*\.MSG', f.name)]
-        last_dir = sorted(msg_dirs)[-1]
-        nowt = time.time()
-        if os.path.isdir(last_dir):
-            try:
+        try:
+            # msg_dir = '/data/data/com.termux/files/home/storage/shared/'
+            #           'Documents/HFpager/'
+            pager_dir = '/storage/emulated/0/Documents/HFpager/'
+            msg_dirs = [f.path for f in os.scandir(pager_dir)
+                        if f.is_dir() and re.match(r'.*\.MSG', f.name)]
+            last_dir = sorted(msg_dirs)[-1]
+            nowt = time.time()
+            if os.path.isdir(last_dir):
+            
                 for filename in os.scandir(last_dir):
                     if os.stat(filename).st_ctime > nowt - 6:
                         mesg = open(filename, 'r',
                                     encoding='cp1251')
                         text = mesg.read()
                         parse_file(filename.path.replace(pager_dir, ''), text)
-            except Exception as ex:
-                now = date_time_now()
-                print(f'{now} HFpager send/receive message error: {ex}')
+        except Exception as ex:
+            now = date_time_now()
+            print(f'{now} HFpager send/receive message error: {ex}')
         time.sleep(5)
 
 
