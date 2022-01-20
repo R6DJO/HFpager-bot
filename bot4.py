@@ -1,6 +1,7 @@
 #!/bin/python
 # -*- coding: utf-8 -*-
 import re
+import json
 import telebot
 from telebot.util import smart_split
 import time
@@ -43,24 +44,24 @@ def hfpager_bot():
         stdout=subprocess.PIPE, shell=True)
     print(f'{now} HFpager message parsing is running')
     while True:
-        # msg_dir = '/data/data/com.termux/files/home/storage/shared/'
-        #           'Documents/HFpager/'
-        pager_dir = '/storage/emulated/0/Documents/HFpager/'
-        msg_dirs = [f.path for f in os.scandir(pager_dir)
-                    if f.is_dir() and re.match(r'.*\.MSG', f.name)]
-        last_dir = sorted(msg_dirs)[-1]
-        nowt = time.time()
-        if os.path.isdir(last_dir):
-            try:
+        try:
+            # msg_dir = '/data/data/com.termux/files/home/storage/shared/'
+            #           'Documents/HFpager/'
+            pager_dir = '/storage/emulated/0/Documents/HFpager/'
+            msg_dirs = [f.path for f in os.scandir(pager_dir)
+                        if f.is_dir() and re.match(r'.*\.MSG', f.name)]
+            last_dir = sorted(msg_dirs)[-1]
+            nowt = time.time()
+            if os.path.isdir(last_dir):
                 for filename in os.scandir(last_dir):
                     if os.stat(filename).st_ctime > nowt - 6:
                         mesg = open(filename, 'r',
                                     encoding='cp1251')
                         text = mesg.read()
                         parse_file(filename.path.replace(pager_dir, ''), text)
-            except Exception as ex:
-                now = date_time_now()
-                print(f'{now} HFpager send/receive message error: {ex}')
+        except Exception as ex:
+            now = date_time_now()
+            print(f'{now} HFpager send/receive message error: {ex}')
         time.sleep(5)
 
 
@@ -256,6 +257,24 @@ def send_welcome(message):
 `! blah blah blah` - ! в сообщении равносилен опции "Повторять до подтв."\n
 `>123! blahblah` - отправка на ID:123 будет повторятся до подтверждения
 """, parse_mode='markdown')
+
+
+@bot.message_handler(commands=['bat', 'battery'])
+def send_bat_status(message):
+    battery = json.loads(
+        subprocess.run(['termux-battery-status'],
+                       stdout=subprocess.PIPE).stdout.decode('utf-8'))
+    print(battery)
+    b_level = battery['percentage']
+    b_status = battery['status']
+    b_current = battery['current']
+    b_temp = battery['temperature']
+    bot.reply_to(message, f"""
+Уровень заряда батареи: {b_level}%
+Статус батареи: {b_status}
+Температура: {b_temp}°C
+Ток потребления: {b_current}mA
+""")
 
 
 @bot.message_handler(func=lambda message: True)
