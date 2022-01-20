@@ -262,6 +262,7 @@ def send_welcome(message):
 @bot.message_handler(commands=['bat', 'battery'])
 def send_bat_status(message):
     battery = json.loads(subprocess.run(['termux-battery-status'], stdout=subprocess.PIPE).stdout.decode('utf-8'))
+    print(battery)
     b_level = battery['percentage']
     b_status = battery['status']
     b_current = battery['current']
