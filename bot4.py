@@ -266,11 +266,11 @@ def send_bat_status(message):
     b_status = battery['status']
     b_current = battery['current']
     b_temp = battery['temperature']
-    bot.reply_to(message, f'''Уровень заряда батареи: {b_level}
+    bot.reply_to(message, f"""Уровень заряда батареи: {b_level}
 Статус батареи: {b_status}
 Температура: {b_temp}
 Ток потребления: {b_current}
-''', parse_mode='markdown')
+""", parse_mode='markdown')
 
 
 @bot.message_handler(func=lambda message: True)
