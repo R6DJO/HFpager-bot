@@ -250,7 +250,7 @@ bot = telebot.TeleBot(token)
 @bot.message_handler(commands=['help', 'start'])
 def send_welcome(message):
     bot.reply_to(message, f"""Привет, я HFpager Bot.
-Я отправляю сообщения с шлюза {callsign} через HFpager ID:{my_id}\n
+Я отправляю сообщения с шлюза {callsign} мой ID:{my_id}\n
 Как меня использовать:\n
 `>blah blah blah` - отправит _blah blah blah_ на ID:{abonent_id}\n
 `>123 blah blah blah` - отправит _blah blah blah_ на ID:_123_\n
@@ -261,20 +261,24 @@ def send_welcome(message):
 
 @bot.message_handler(commands=['bat', 'battery'])
 def send_bat_status(message):
-    battery = json.loads(
-        subprocess.run(['termux-battery-status'],
-                       stdout=subprocess.PIPE).stdout.decode('utf-8'))
-    b_level = battery['percentage']
-    b_status = battery['status']
-    b_current = battery['current']
-    b_temp = battery['temperature']
-    bot.reply_to(message, f"""
+    try:
+        battery = json.loads(
+            subprocess.run(['termux-battery-status'],
+                        stdout=subprocess.PIPE).stdout.decode('utf-8'))
+        b_level = battery['percentage']
+        b_status = battery['status']
+        b_current = battery['current']
+        b_temp = battery['temperature']
+        bot.reply_to(message, f"""
 Уровень заряда батареи: {b_level}%
 Статус батареи: {b_status}
 Температура: {b_temp}°C
 Ток потребления: {b_current}mA
 """)
-
+    except Exception as ex:
+        now = date_time_now()
+        print(f'{now} HFpager battery-status error: {ex}')
+        bot.reply_to(message, 'Статус питания недоступен :-(')
 
 @bot.message_handler(func=lambda message: True)
 def echo_message(message):
