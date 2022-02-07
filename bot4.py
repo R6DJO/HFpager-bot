@@ -43,6 +43,7 @@ def hfpager_bot():
         '-n ru.radial.nogg.hfpager/ru.radial.full.hfpager.MainActivity ',
         stdout=subprocess.PIPE, shell=True)
     print(f'{now} HFpager message parsing is running')
+    power_stat_prev = 'UNKNOWN'
     while True:
         try:
             # msg_dir = '/data/data/com.termux/files/home/storage/shared/'
@@ -62,6 +63,13 @@ def hfpager_bot():
         except Exception as ex:
             now = date_time_now()
             print(f'{now} HFpager send/receive message error: {ex}')
+        power_stat = power_status()
+        if power_stat != power_stat_prev:
+            now = date_time_now()
+            print(f'{now} Power status: {power_stat}')
+            bot.send_message(chat_id=chat_id,
+                                  text=f'Power status: {power_stat}')
+            power_stat_prev = power_stat
         time.sleep(5)
 
 
@@ -244,13 +252,27 @@ def pager_transmit(message, abonent_id, repeat):
     # return out
 
 
+def power_status():
+    try:
+        battery = json.loads(
+            subprocess.run(['termux-battery-status'],
+                        stdout=subprocess.PIPE).stdout.decode('utf-8'))
+        b_status = battery['status']
+        
+    except Exception as ex:
+        now = date_time_now()
+        print(f'{now} HFpager battery-status error: {ex}')
+        b_status = 'UNKNOWN'
+    return b_status
+
+
 bot = telebot.TeleBot(token)
 
 
 @bot.message_handler(commands=['help', 'start'])
 def send_welcome(message):
     bot.reply_to(message, f"""Привет, я HFpager Bot.
-Я отправляю сообщения с шлюза {callsign} через HFpager ID:{my_id}\n
+Я отправляю сообщения с шлюза {callsign} мой ID:{my_id}\n
 Как меня использовать:\n
 `>blah blah blah` - отправит _blah blah blah_ на ID:{abonent_id}\n
 `>123 blah blah blah` - отправит _blah blah blah_ на ID:_123_\n
@@ -261,20 +283,24 @@ def send_welcome(message):
 
 @bot.message_handler(commands=['bat', 'battery'])
 def send_bat_status(message):
-    battery = json.loads(
-        subprocess.run(['termux-battery-status'],
-                       stdout=subprocess.PIPE).stdout.decode('utf-8'))
-    b_level = battery['percentage']
-    b_status = battery['status']
-    b_current = battery['current']
-    b_temp = battery['temperature']
-    bot.reply_to(message, f"""
+    try:
+        battery = json.loads(
+            subprocess.run(['termux-battery-status'],
+                        stdout=subprocess.PIPE).stdout.decode('utf-8'))
+        b_level = battery['percentage']
+        b_status = battery['status']
+        b_current = battery['current']
+        b_temp = battery['temperature']
+        bot.reply_to(message, f"""
 Уровень заряда батареи: {b_level}%
 Статус батареи: {b_status}
 Температура: {b_temp}°C
 Ток потребления: {b_current}mA
 """)
-
+    except Exception as ex:
+        now = date_time_now()
+        print(f'{now} HFpager battery-status error: {ex}')
+        bot.reply_to(message, 'Статус питания недоступен :-(')
 
 @bot.message_handler(func=lambda message: True)
 def echo_message(message):
