@@ -43,6 +43,7 @@ def hfpager_bot():
         '-n ru.radial.nogg.hfpager/ru.radial.full.hfpager.MainActivity ',
         stdout=subprocess.PIPE, shell=True)
     print(f'{now} HFpager message parsing is running')
+    power_stat_prev = 'UNKNOWN'
     while True:
         try:
             # msg_dir = '/data/data/com.termux/files/home/storage/shared/'
@@ -62,6 +63,12 @@ def hfpager_bot():
         except Exception as ex:
             now = date_time_now()
             print(f'{now} HFpager send/receive message error: {ex}')
+        power_stat = power_status()
+        if power_stat != power_stat_prev:
+            now = date_time_now()
+            print(f'{now} Power status: {power_stat}')
+            bot.send_message(chat_id=chat_id,
+                                  text=f'Power status: {power_stat}')
         time.sleep(5)
 
 
@@ -242,6 +249,20 @@ def pager_transmit(message, abonent_id, repeat):
         stdout=subprocess.PIPE, shell=True)
     # out = proc.stdout.read()
     # return out
+
+
+def power_status():
+    try:
+        battery = json.loads(
+            subprocess.run(['termux-battery-status'],
+                        stdout=subprocess.PIPE).stdout.decode('utf-8'))
+        b_status = battery['status']
+        
+    except Exception as ex:
+        now = date_time_now()
+        print(f'{now} HFpager battery-status error: {ex}')
+        b_status = 'UNKNOWN'
+    return b_status
 
 
 bot = telebot.TeleBot(token)
