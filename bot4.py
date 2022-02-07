@@ -69,6 +69,7 @@ def hfpager_bot():
             print(f'{now} Power status: {power_stat}')
             bot.send_message(chat_id=chat_id,
                                   text=f'Power status: {power_stat}')
+            power_stat_prev = power_stat
         time.sleep(5)
 
 
