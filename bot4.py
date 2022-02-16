@@ -18,7 +18,7 @@ from config import abonent_id, callsign, chat_id, my_id, token, owm_api_key
 
 logging.basicConfig(
     filename='bot.log',
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s [%(levelname)s] %(message)s',
 )
 
@@ -38,6 +38,7 @@ def bot_polling():
     while True:
         try:
             bot.polling(interval=5)
+            logging.debug('Bot polling')
         except Exception as ex:
             now = date_time_now()
             logging.error(f'Bot polling error: {ex}')
@@ -46,11 +47,12 @@ def bot_polling():
 
 def hfpager_bot():
     now = date_time_now()
-    logging.info(f'HFpager run')
+    
     subprocess.Popen(
         'am start --user 0 '
         '-n ru.radial.nogg.hfpager/ru.radial.full.hfpager.MainActivity ',
         stdout=subprocess.PIPE, shell=True)
+    logging.info(f'HFpager started')
     logging.info(f'HFpager message parsing is running')
     power_stat_prev = 'UNKNOWN'
     while True:
