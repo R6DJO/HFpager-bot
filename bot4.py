@@ -13,12 +13,12 @@ from textwrap import shorten
 import requests
 import logging
 
-from config import abonent_id, callsign, chat_id, my_id, token, owm_api_key
+from config import abonent_id, callsign, chat_id, my_id, token, owm_api_key, log_level
 
 
 logging.basicConfig(
     filename='bot.log',
-    level=logging.DEBUG,
+    level=log_level,
     format='%(asctime)s [%(levelname)s] %(message)s',
 )
 
