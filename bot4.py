@@ -17,6 +17,7 @@ from config import abonent_id, callsign, chat_id, my_id, token, owm_api_key
 
 
 logging.basicConfig(
+    filename='bot.log',
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s',
 )
