@@ -40,7 +40,7 @@ def bot_polling():
         except Exception as ex:
             now = date_time_now()
             logging.error(f'{now} Bot polling error: {ex}')
-            logging.debug(exc_info=True)
+            logging.debug(f'Error: {ex}', exc_info=True)
 
 
 def hfpager_bot():
@@ -71,7 +71,7 @@ def hfpager_bot():
         except Exception as ex:
             now = date_time_now()
             logging.error(f'{now} HFpager send/receive message error: {ex}')
-            logging.debug(exc_info=True)
+            logging.debug(f'Error: {ex}', exc_info=True)
         power_stat = power_status()
         if power_stat != power_stat_prev:
             now = date_time_now()
