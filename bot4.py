@@ -306,6 +306,8 @@ def send_bat_status(message):
 Температура: {b_temp}°C
 Ток потребления: {b_current}mA
 """)
+        logging.info(f'Запрошен статус питания')
+        
     except Exception as ex:
         now = date_time_now()
         logging.error(f'{now} HFpager battery-status error: {ex}')
