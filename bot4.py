@@ -11,8 +11,16 @@ from threading import Thread
 from datetime import datetime
 from textwrap import shorten
 import requests
+import logging
 
-from config import abonent_id, callsign, chat_id, my_id, token, owm_api_key
+from config import abonent_id, callsign, chat_id, my_id, token, owm_api_key, log_level
+
+
+logging.basicConfig(
+    filename='bot.log',
+    level=log_level,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+)
 
 
 message_dict = {}
@@ -25,24 +33,23 @@ def date_time_now():
 
 
 def bot_polling():
-    now = date_time_now()
-    print(f'{now} Bot polling is running')
+    logging.info('Bot polling is running')
     while True:
         try:
             bot.polling(interval=5)
+            logging.debug('Bot polling')
         except Exception as ex:
-            now = date_time_now()
-            print(f'{now} Bot polling error: {ex}')
+            logging.error(f'Bot polling error: {ex}')
+            logging.debug(f'Error: {ex}', exc_info=True)
 
 
 def hfpager_bot():
-    now = date_time_now()
-    print(f'{now} HFpager run')
     subprocess.Popen(
         'am start --user 0 '
         '-n ru.radial.nogg.hfpager/ru.radial.full.hfpager.MainActivity ',
         stdout=subprocess.PIPE, shell=True)
-    print(f'{now} HFpager message parsing is running')
+    logging.info('HFpager started')
+    logging.info('HFpager message parsing is running')
     power_stat_prev = 'UNKNOWN'
     while True:
         try:
@@ -61,14 +68,14 @@ def hfpager_bot():
                         text = mesg.read()
                         parse_file(filename.path.replace(pager_dir, ''), text)
         except Exception as ex:
-            now = date_time_now()
-            print(f'{now} HFpager send/receive message error: {ex}')
+            logging.error(f'HFpager send/receive message error: {ex}')
+            logging.debug(f'Error: {ex}', exc_info=True)
         power_stat = power_status()
         if power_stat != power_stat_prev:
-            now = date_time_now()
-            print(f'{now} Power status: {power_stat}')
-            bot.send_message(chat_id=chat_id,
-                                  text=f'Power status: {power_stat}')
+            logging.info(f'Power status: {power_stat}')
+            bot.send_message(
+                chat_id=chat_id,
+                text=f'Power status: {power_stat}')
             power_stat_prev = power_stat
         time.sleep(5)
 
@@ -96,40 +103,38 @@ def parse_file(dir_filename, text):
     date = dirname.split('.')[0]
     time = filename.split('-')[0]
     key = f'{date} {time}'
-    now = date_time_now()
     short_text = shorten(text, width=35, placeholder="...")
     if re.match(r'\d{6}-RO-0.+_' + str(my_id) + '.TXT', filename):
-        print(f'{now} HFpager private message received: {text}')
+        logging.info(f'HFpager private message received: {text}')
         bot.send_message(chat_id=chat_id,
                          text=text)
         detect_request(text)
     elif re.match(r'\d{6}-RO-[2,3].+_' + str(my_id) + '.TXT', filename):
-        print(f'{now} HFpager private message received and acknowledgment '
-              f'sent: {short_text}')
+        logging.info('HFpager private message received and acknowledgment '
+                     f'sent: {short_text}')
         bot.send_message(chat_id=chat_id, text=f'√ {text}')
         detect_request(text)
     elif re.match(r'\d{6}-R', filename):
-        print(f'{now} HFpager message intercepted: {text}')
+        logging.info(f'HFpager message intercepted: {text}')
         bot.send_message(chat_id=chat_id, text=text,
                          disable_notification=True)
         detect_request(text)
     elif re.match(r'\d{6}-S[1-9]-\dP', filename):
-        print(f'{now} HFpager message sent and acknowledgment '
-              f'received: {short_text}')
+        logging.info('HFpager message sent and acknowledgment '
+                     f'received: {short_text}')
         send_edit_msg(key, f'√ {text}')
     elif re.match(r'\d{6}-S[1-9]-\dN', filename):
-        print(f'{now} HFpager message sent and not '
-              f'acknowledgment received: {short_text}')
+        logging.info('HFpager message sent and not '
+                     f'acknowledgment received: {short_text}')
         send_edit_msg(key, f'X {text}')
     elif re.match(r'\d{6}-S[1-9]-\d0', filename):
-        print(f'{now} HFpager message sent: {short_text}')
+        logging.info(f'HFpager message sent: {short_text}')
         send_edit_msg(key, f'{text}')
 
 
 def detect_request(text):
     mesg_from = 0
     mesg_to = 0
-    now = date_time_now()
     parse_message = text.split('\n', maxsplit=1)[-1]
     # получаем id адресатов
     match = re.search(r'^(\d{1,5}) \(\d+\) > (\d+).*', text)
@@ -144,7 +149,7 @@ def detect_request(text):
         mlon = match[2]
         message = ('https://www.openstreetmap.org/?'
                    f'mlat={mlat}&mlon={mlon}&zoom=12')
-        print(f'{now} HFpager -> MapLink: {message}')
+        logging.info(f'HFpager -> MapLink: {message}')
         bot.send_message(chat_id=chat_id, text=message)
     # парсим =w{lat},{lon}: weather -> hf
     match = re.search(r'^=w(-{0,1}\d{1,2}\.\d{1,6}),(-{0,1}\d{1,3}\.\d{1,6})',
@@ -152,7 +157,7 @@ def detect_request(text):
     if match and mesg_to == str(my_id):
         mlat = match[1]
         mlon = match[2]
-        print(f'{now} HFpager -> Weather: {mlat} {mlon}')
+        logging.info(f'HFpager -> Weather: {mlat} {mlon}')
         bot.send_message(chat_id=chat_id,
                          text=(f'{my_id}>{mesg_from} '
                                f'weather in: {mlat} {mlon}'))
@@ -170,9 +175,8 @@ def get_weather(lat, lon):
     data = resp.json()
     weather = ''
     if 'cod' in data:
-        now = date_time_now()
         error = data['message']
-        print(f'{now} HFpager get weather error: {error}')
+        logging.error(f'HFpager get weather error: {error}')
         return 'Error in weather'
     else:
         for day in data['daily'][:3]:
@@ -235,10 +239,9 @@ def parse_for_pager(message, abonent_id):
 
 
 def pager_transmit(message, abonent_id, repeat):
-    now = date_time_now()
     short_text = shorten(message, width=35, placeholder="...")
-    print(f'{now} HFpager send to ID:{abonent_id} repeat:{repeat} '
-          f'message: {short_text}')
+    logging.info(f'HFpager send to ID:{abonent_id} repeat:{repeat} '
+                 f'message: {short_text}')
     subprocess.Popen(
         'am start --user 0 '
         '-n ru.radial.nogg.hfpager/ru.radial.full.hfpager.MainActivity '
@@ -256,12 +259,10 @@ def power_status():
     try:
         battery = json.loads(
             subprocess.run(['termux-battery-status'],
-                        stdout=subprocess.PIPE).stdout.decode('utf-8'))
+                           stdout=subprocess.PIPE).stdout.decode('utf-8'))
         b_status = battery['status']
-        
     except Exception as ex:
-        now = date_time_now()
-        print(f'{now} HFpager battery-status error: {ex}')
+        logging.error(f'HFpager battery-status error: {ex}')
         b_status = 'UNKNOWN'
     return b_status
 
@@ -286,7 +287,7 @@ def send_bat_status(message):
     try:
         battery = json.loads(
             subprocess.run(['termux-battery-status'],
-                        stdout=subprocess.PIPE).stdout.decode('utf-8'))
+                           stdout=subprocess.PIPE).stdout.decode('utf-8'))
         b_level = battery['percentage']
         b_status = battery['status']
         b_current = battery['current']
@@ -297,21 +298,21 @@ def send_bat_status(message):
 Температура: {b_temp}°C
 Ток потребления: {b_current}mA
 """)
+        logging.info('Запрошен статус питания')
     except Exception as ex:
-        now = date_time_now()
-        print(f'{now} HFpager battery-status error: {ex}')
+        logging.error(f'HFpager battery-status error: {ex}')
         bot.reply_to(message, 'Статус питания недоступен :-(')
+
 
 @bot.message_handler(func=lambda message: True)
 def echo_message(message):
-    now = date_time_now()
     # обрабатываем начинающиеся с >
     if message.date > start_time:
         reg = re.compile(f'^({my_id}' + ')*>(\\d{1,5})*(.+)')
         match = re.match(reg, message.text)
         if match:
             short_text = shorten(message.text, width=35, placeholder="...")
-            print(f'{now} Bot receive message: {short_text}')
+            logging.info(f'Bot receive message: {short_text}')
             if match.group(2):
                 text_parse = match.group(2) + match.group(3)
             else:
