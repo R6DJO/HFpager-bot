@@ -312,9 +312,9 @@ def echo_message(message):
         match = re.match(reg, message.text)
         if match:
             short_text = shorten(message.text, width=35, placeholder="...")
-            short_text_match = re.match(r'^!(.+)', short_text)
-            if short_text_match:
-                short_text = short_text_match.group(1).strip()
+            # short_text_match = re.match(r'^!(.+)', short_text)
+            # if short_text_match:
+            #     short_text = short_text_match.group(1).strip()
             logging.info(f'Bot receive message: {short_text}')
             if match.group(2):
                 text_parse = match.group(2) + match.group(3)
@@ -323,7 +323,11 @@ def echo_message(message):
             parse_for_pager(text_parse, abonent_id)
             message = bot.send_message(chat_id=chat_id,
                                        text=short_text)
-            bot_recieve_dict[match.group(3).strip()] = {
+            key = match.group(3).strip()
+            key_match = re.match(r'^!(.+)', key)
+            if key_match:
+                key = key_match.group(1).strip()
+            bot_recieve_dict[key] = {
                 'message_id': message.message_id}
 
 
