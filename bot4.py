@@ -312,9 +312,6 @@ def echo_message(message):
         match = re.match(reg, message.text)
         if match:
             short_text = shorten(message.text, width=35, placeholder="...")
-            # short_text_match = re.match(r'^!(.+)', short_text)
-            # if short_text_match:
-            #     short_text = short_text_match.group(1).strip()
             logging.info(f'Bot receive message: {short_text}')
             if match.group(2):
                 text_parse = match.group(2) + match.group(3)
