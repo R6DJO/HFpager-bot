@@ -308,7 +308,7 @@ def send_bat_status(message):
 def echo_message(message):
     # обрабатываем начинающиеся с >
     if message.date > start_time:
-        reg = re.compile(f'^({my_id})*>([0-9]{{1,5}})*(.+)')
+        reg = re.compile(f'^({my_id})*>([0-9]{{1,5}})*([\s\S]+)')
         match = re.match(reg, message.text)
         if match:
             short_text = shorten(message.text, width=35, placeholder="...")
