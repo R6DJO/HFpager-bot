@@ -50,7 +50,6 @@ def hfpager_bot():
         stdout=subprocess.PIPE, shell=True)
     logging.info('HFpager started')
     logging.info('HFpager message parsing is running')
-    power_stat_prev = 'UNKNOWN'
     while True:
         try:
             # msg_dir = '/data/data/com.termux/files/home/storage/shared/'
@@ -70,13 +69,6 @@ def hfpager_bot():
         except Exception as ex:
             logging.error(f'HFpager send/receive message error: {ex}')
             logging.debug(f'Error: {ex}', exc_info=True)
-        power_stat = power_status()
-        if power_stat != power_stat_prev:
-            logging.info(f'Power status: {power_stat}')
-            bot.send_message(
-                chat_id=chat_id,
-                text=f'Power status: {power_stat}')
-            power_stat_prev = power_stat
         time.sleep(5)
 
 
