@@ -13,7 +13,8 @@ from textwrap import shorten
 import requests
 import logging
 
-from config import abonent_id, callsign, chat_id, my_id, token, owm_api_key, log_level
+from config import (abonent_id, callsign, chat_id, my_id, token,
+                    owm_api_key, log_level)
 
 
 logging.basicConfig(
@@ -52,9 +53,9 @@ def hfpager_bot():
     logging.info('HFpager message parsing is running')
     while True:
         try:
-            # msg_dir = '/data/data/com.termux/files/home/storage/shared/'
-            #           'Documents/HFpager/'
-            pager_dir = '/storage/emulated/0/Documents/HFpager/'
+            pager_dir = ('/data/data/com.termux/files/home/storage/shared/'
+                         'Documents/HFpager/')
+            # pager_dir = '/storage/emulated/0/Documents/HFpager/'
             msg_dirs = [f.path for f in os.scandir(pager_dir)
                         if f.is_dir() and re.match(r'.*\.MSG', f.name)]
             last_dir = sorted(msg_dirs)[-1]
