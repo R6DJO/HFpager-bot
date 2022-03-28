@@ -13,7 +13,8 @@ from textwrap import shorten
 import requests
 import logging
 
-from config import abonent_id, callsign, chat_id, my_id, token, owm_api_key, log_level
+from config import (abonent_id, callsign, chat_id, my_id, token,
+                    owm_api_key, log_level)
 
 
 logging.basicConfig(
@@ -50,12 +51,11 @@ def hfpager_bot():
         stdout=subprocess.PIPE, shell=True)
     logging.info('HFpager started')
     logging.info('HFpager message parsing is running')
-    power_stat_prev = 'UNKNOWN'
     while True:
         try:
-            # msg_dir = '/data/data/com.termux/files/home/storage/shared/'
-            #           'Documents/HFpager/'
-            pager_dir = '/storage/emulated/0/Documents/HFpager/'
+            pager_dir = ('/data/data/com.termux/files/home/storage/shared/'
+                         'Documents/HFpager/')
+            # pager_dir = '/storage/emulated/0/Documents/HFpager/'
             msg_dirs = [f.path for f in os.scandir(pager_dir)
                         if f.is_dir() and re.match(r'.*\.MSG', f.name)]
             last_dir = sorted(msg_dirs)[-1]
@@ -70,13 +70,6 @@ def hfpager_bot():
         except Exception as ex:
             logging.error(f'HFpager send/receive message error: {ex}')
             logging.debug(f'Error: {ex}', exc_info=True)
-        power_stat = power_status()
-        if power_stat != power_stat_prev:
-            logging.info(f'Power status: {power_stat}')
-            bot.send_message(
-                chat_id=chat_id,
-                text=f'Power status: {power_stat}')
-            power_stat_prev = power_stat
         time.sleep(5)
 
 
@@ -308,7 +301,7 @@ def send_bat_status(message):
 def echo_message(message):
     # обрабатываем начинающиеся с >
     if message.date > start_time:
-        reg = re.compile(f'^({my_id}' + ')*>(\\d{1,5})*(.+)')
+        reg = re.compile(f'^({my_id})*>([0-9]{{1,5}})*([\s\S]+)')
         match = re.match(reg, message.text)
         if match:
             short_text = shorten(message.text, width=35, placeholder="...")
@@ -320,7 +313,11 @@ def echo_message(message):
             parse_for_pager(text_parse, abonent_id)
             message = bot.send_message(chat_id=chat_id,
                                        text=short_text)
-            bot_recieve_dict[match.group(3).strip()] = {
+            key = match.group(3).strip()
+            key_match = re.match(r'^!(.+)', key)
+            if key_match:
+                key = key_match.group(1).strip()
+            bot_recieve_dict[key] = {
                 'message_id': message.message_id}
 
 
