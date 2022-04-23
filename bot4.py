@@ -57,7 +57,7 @@ def hfpager_bot():
                          'Documents/HFpager/')
             # pager_dir = '/storage/emulated/0/Documents/HFpager/'
             msg_dirs = [f.path for f in os.scandir(pager_dir)
-                        if f.is_dir() and re.match(r'.*\.MSG', f.name)]
+                        if f.is_dir() and re.match(r'.*\.MSG|.*\.BEA', f.name)]
             last_dir = sorted(msg_dirs)[-1]
             nowt = time.time()
             if os.path.isdir(last_dir):
@@ -123,6 +123,10 @@ def parse_file(dir_filename, text):
     elif re.match(r'\d{6}-S[1-9]-\d0', filename):
         logging.info(f'HFpager message sent: {short_text}')
         send_edit_msg(key, f'{text}')
+    elif re.match(r'\d{6}-B', filename):
+        logging.info(f'HFpager beacon intercepted: {text}')
+        bot.send_message(chat_id=chat_id, text=text,
+                         disable_notification=True)
 
 
 def detect_request(text):
