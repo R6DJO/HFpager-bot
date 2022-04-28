@@ -289,7 +289,7 @@ def send_welcome(message):
 def send_bat_status(message):
     try:
         battery = json.loads(
-            subprocess.run(['termux-battery-status'],
+            subprocess.run(['timeout', '2', 'termux-battery-status'],
                            stdout=subprocess.PIPE).stdout.decode('utf-8'))
         b_level = battery['percentage']
         b_status = battery['status']
