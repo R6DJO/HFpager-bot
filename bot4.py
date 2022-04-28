@@ -1,5 +1,6 @@
 #!/bin/python
 # -*- coding: utf-8 -*-
+# import imp
 import re
 import json
 import telebot
@@ -12,6 +13,7 @@ from datetime import datetime
 from textwrap import shorten
 import requests
 import logging
+from pprint import pprint
 
 from config import (abonent_id, callsign, chat_id, my_id, token,
                     owm_api_key, log_level)
@@ -55,16 +57,18 @@ def hfpager_bot():
                          'Documents/HFpager/')
     start_file_list = []
     for root, dirs, files in os.walk(pager_dir):
-        start_file_list.append(os.path.join(root, f))
+        for file in files:
+            start_file_list.append(os.path.join(root, file))
     pprint(start_file_list)
     while True:
         current_file_list = []
         # try:
         for root, dirs, files in os.walk(pager_dir):
-            current_file_list.append(os.path.join(root, f))
+            for file in files:
+                current_file_list.append(os.path.join(root, file))
         delta = list(set(current_file_list) - set(start_file_list))
         pprint(delta)
-                
+
                     # filename = os.path.join(root, f)
                     # if os.stat(filename).st_ctime > nowt - 6:
                     #     mesg = open(filename, 'r',
