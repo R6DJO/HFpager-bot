@@ -13,7 +13,6 @@ from datetime import datetime
 from textwrap import shorten
 import requests
 import logging
-from pprint import pprint
 
 from config import (abonent_id, callsign, chat_id, my_id, token,
                     owm_api_key, log_level)
@@ -47,38 +46,36 @@ def bot_polling():
 
 
 def hfpager_bot():
-    subprocess.Popen(
-        'am start --user 0 '
-        '-n ru.radial.nogg.hfpager/ru.radial.full.hfpager.MainActivity ',
-        stdout=subprocess.PIPE, shell=True)
-    logging.info('HFpager started')
-    logging.info('HFpager message parsing is running')
-    pager_dir = ('/data/data/com.termux/files/home/storage/shared/'
-                         'Documents/HFpager/')
-    start_file_list = []
-    for root, dirs, files in os.walk(pager_dir):
-        for file in files:
-            start_file_list.append(os.path.join(root, file))
-    pprint(start_file_list)
-    while True:
-        current_file_list = []
-        # try:
+    try:
+        subprocess.Popen(
+            'am start --user 0 '
+            '-n ru.radial.nogg.hfpager/ru.radial.full.hfpager.MainActivity ',
+            stdout=subprocess.PIPE, shell=True)
+        logging.info('HFpager started')
+        logging.info('HFpager message parsing is running')
+        pager_dir = ('/data/data/com.termux/files/home/storage/shared/'
+                     'Documents/HFpager/')
+        start_file_list = []
         for root, dirs, files in os.walk(pager_dir):
             for file in files:
-                current_file_list.append(os.path.join(root, file))
-        delta = list(set(current_file_list) - set(start_file_list))
-        pprint(delta)
-        start_file_list = current_file_list.copy()
+                start_file_list.append(os.path.join(root, file))
+        while True:
+            current_file_list = []
+            for root, dirs, files in os.walk(pager_dir):
+                for file in files:
+                    current_file_list.append(os.path.join(root, file))
+            delta = list(set(current_file_list) - set(start_file_list))
+            logging.debug(f'New files: {delta}')
+            for file in delta:
+                mesg = open(file, 'r', encoding='cp1251')
+                text = mesg.read()
+                parse_file(file.replace(pager_dir, ''), text)
+            start_file_list = current_file_list.copy()
 
-                    # filename = os.path.join(root, f)
-                    # if os.stat(filename).st_ctime > nowt - 6:
-                    #     mesg = open(filename, 'r',
-                    #                 encoding='cp1251')
-                    #     text = mesg.read()
-                    #     parse_file(filename.replace(pager_dir, ''), text)
-        # except Exception as ex:
-        #     logging.error(f'HFpager send/receive message error: {ex}')
-        #     logging.debug(f'Error: {ex}', exc_info=True)
+    except Exception as ex:
+        logging.error(f'HFpager send/receive message error: {ex}')
+        logging.debug(f'Error: {ex}', exc_info=True)
+    finally:
         time.sleep(2)
 
 
