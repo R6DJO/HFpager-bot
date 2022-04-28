@@ -51,46 +51,30 @@ def hfpager_bot():
         stdout=subprocess.PIPE, shell=True)
     logging.info('HFpager started')
     logging.info('HFpager message parsing is running')
-    while True:
-        try:
-            pager_dir = ('/data/data/com.termux/files/home/storage/shared/'
+    pager_dir = ('/data/data/com.termux/files/home/storage/shared/'
                          'Documents/HFpager/')
-            # pager_dir = '/storage/emulated/0/Documents/HFpager/'
-            # msg_dirs = [f.path for f in os.scandir(pager_dir)
-            #             if f.is_dir() and re.match(r'.*\.MSG', f.name)]
-            # last_dir = sorted(msg_dirs)[-1]
-            # nowt = time.time()
-            # if os.path.isdir(last_dir):
-            #     for filename in os.scandir(last_dir):
-            #         if os.stat(filename).st_ctime > nowt - 6:
-            #             mesg = open(filename, 'r',
-            #                         encoding='cp1251')
-            #             text = mesg.read()
-            #             parse_file(filename.path.replace(pager_dir, ''), text)
-            # msg_dirs = [f.path for f in os.scandir(pager_dir)
-            #             if f.is_dir() and re.match(r'.*\.BEA', f.name)]
-            # last_dir = sorted(msg_dirs)[-1]
-            # nowt = time.time()
-            # if os.path.isdir(last_dir):
-            #     for filename in os.scandir(last_dir):
-            #         if os.stat(filename).st_ctime > nowt - 6:
-            #             mesg = open(filename, 'r',
-            #                         encoding='cp1251')
-            #             text = mesg.read()
-            #             parse_file(filename.path.replace(pager_dir, ''), text)
-            nowt = time.time()
-            for root, dirs, files in os.walk(pager_dir):
-                for f in files:
-                    filename = os.path.join(root, f)
-                    if os.stat(filename).st_ctime > nowt - 6:
-                        mesg = open(filename, 'r',
-                                    encoding='cp1251')
-                        text = mesg.read()
-                        parse_file(filename.replace(pager_dir, ''), text)
-        except Exception as ex:
-            logging.error(f'HFpager send/receive message error: {ex}')
-            logging.debug(f'Error: {ex}', exc_info=True)
-        time.sleep(5)
+    start_file_list = []
+    for root, dirs, files in os.walk(pager_dir):
+        start_file_list.append(os.path.join(root, f))
+    pprint(start_file_list)
+    while True:
+        current_file_list = []
+        # try:
+        for root, dirs, files in os.walk(pager_dir):
+            current_file_list.append(os.path.join(root, f))
+        delta = list(set(current_file_list) - set(start_file_list))
+        pprint(delta)
+                
+                    # filename = os.path.join(root, f)
+                    # if os.stat(filename).st_ctime > nowt - 6:
+                    #     mesg = open(filename, 'r',
+                    #                 encoding='cp1251')
+                    #     text = mesg.read()
+                    #     parse_file(filename.replace(pager_dir, ''), text)
+        # except Exception as ex:
+        #     logging.error(f'HFpager send/receive message error: {ex}')
+        #     logging.debug(f'Error: {ex}', exc_info=True)
+        time.sleep(2)
 
 
 def send_edit_msg(key, message):
