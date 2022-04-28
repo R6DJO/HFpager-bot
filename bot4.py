@@ -68,6 +68,7 @@ def hfpager_bot():
                 current_file_list.append(os.path.join(root, file))
         delta = list(set(current_file_list) - set(start_file_list))
         pprint(delta)
+        start_file_list = current_file_list.copy()
 
                     # filename = os.path.join(root, f)
                     # if os.stat(filename).st_ctime > nowt - 6:
