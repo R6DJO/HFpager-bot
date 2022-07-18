@@ -45,6 +45,27 @@ def bot_polling():
             logging.debug(f'Error: {ex}', exc_info=True)
 
 
+def hfpager_restart():
+    logging.info('HFpager restart thread started')
+    while True:
+        try:
+            subprocess.Popen(
+                'am start --user 0 '
+                '-n ru.radial.nogg.hfpager/'
+                'ru.radial.full.hfpager.MainActivity '
+                '-a "android.intent.action.SEND" '
+                '--es "android.intent.extra.TEXT" "notext" '
+                '-t "text/plain" '
+                '--ei "android.intent.extra.INDEX" "99999"',
+                stdout=subprocess.PIPE, shell=True)
+            time.sleep(300)
+        except Exception as ex:
+            logging.error(f'HFpager restart thread: {ex}')
+            logging.debug(f'Error: {ex}', exc_info=True)
+        finally:
+            time.sleep(300)
+
+
 def hfpager_bot():
     while True:
         try:
@@ -295,11 +316,11 @@ def send_welcome(message):
 def send_bat_status(message):
     try:
         battery = json.loads(
-            subprocess.run(['timeout', '2', 'termux-battery-status'],
+            subprocess.run(['timeout', '5', 'termux-battery-status'],
                            stdout=subprocess.PIPE).stdout.decode('utf-8'))
         b_level = battery['percentage']
         b_status = battery['status']
-        b_current = battery['current']
+        b_current = battery['current']/1000
         b_temp = battery['temperature']
         bot.reply_to(message, f"""
 Уровень заряда батареи: {b_level}%
@@ -342,7 +363,10 @@ if __name__ == "__main__":
     start_time = int(time.time())
     to_radio = Thread(target=bot_polling)
     to_web = Thread(target=hfpager_bot)
+    to_antisleep = Thread(target=hfpager_restart)
     to_radio.start()
     to_web.start()
+    to_antisleep.start()
     to_radio.join()
     to_web.join()
+    to_antisleep.join()
