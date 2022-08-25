@@ -98,6 +98,7 @@ def hfpager_bot():
                         logging.error(f'HFpager read file error: {ex}')
                         logging.debug(f'Error: {ex}', exc_info=True)
                 start_file_list = current_file_list.copy()
+                time.sleep(2)
 
         except Exception as ex:
             logging.error(f'HFpager message parsing error: {ex}')
