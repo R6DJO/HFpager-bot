@@ -14,7 +14,7 @@ from textwrap import shorten
 import requests
 import logging
 
-from config import (abonent_id, callsign, chat_id, my_id, token,
+from config import (abonent_id, callsign, chat_id, beacon_chat_id, my_id, token,
                     owm_api_key, log_level)
 
 
@@ -159,7 +159,7 @@ def parse_file(dir_filename, text):
         send_edit_msg(key, f'{text}')
     elif re.match(r'\d{6}-B', filename):
         logging.info(f'HFpager beacon intercepted: {text}')
-        bot.send_message(chat_id=chat_id, text=text,
+        bot.send_message(chat_id=beacon_chat_id, text=text,
                          disable_notification=True)
 
 
