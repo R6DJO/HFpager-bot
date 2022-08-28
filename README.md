@@ -9,18 +9,26 @@ Create ```config.py``` file to you smartphone and edit:
 ```
 token = 'ТОКЕН'
 chat_id = ИД_ЧАТА
+beacon_chat_id = ИД_ЧАТА_МАЯКОВ
 my_id = ИД_МОЕГО_ПЕЙДЖЕРА
 abonent_id = ИД_ПЕЙДЖЕРА_КОРРЕСПОНДЕНТА_ПО_УМОЛЧАНИЮ
+owm_api_key = 'АПИ_КЕЙ_ОВМ'
+callsign = 'ПОЗЫВНОЙ_ШЛЮЗА'
+log_level = 'DEBUG'
 ```
 After install python and modules and run Bot
 
 ```bash
-pkg upgrade  
+cd ~/
+pkg upgrade
 pkg install python
+pkg install git
+termux-setup-storage
+termux-wake-lock
 git clone https://github.com/R6DJO/HFpager-bot.git
+cd HFpager-bot
 pip install -r requirements.txt
-chmod +x bot4
-nohup python -u bot4 >> bot.log 2>&1 &
+nohup python bot4.py >> bot.log 2>&1 &
 tail -f bot4.log
 
 ```
