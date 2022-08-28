@@ -338,7 +338,6 @@ def send_bat_status(message):
 @bot.message_handler(func=lambda message: True)
 def echo_message(message):
     # обрабатываем начинающиеся с >
-    print(message.chat.id)
     if message.date > start_time and message.chat.id == chat_id:
         reg = re.compile(f'^({my_id})*>([0-9]{{1,5}})*([\s\S]+)')
         match = re.match(reg, message.text)
