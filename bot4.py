@@ -141,6 +141,11 @@ def parse_file(dir_filename, text):
                      f'sent: {short_text}')
         bot.send_message(chat_id=chat_id, text=f'√ {text}')
         detect_request(text)
+    elif re.match(r'\d{6}-RE.+~_~.TXT', filename):
+        logging.info(f'HFpager message intercepted: {text}')
+        bot.send_message(chat_id=beacon_chat_id, text=text,
+                         disable_notification=True)
+        detect_request(text)
     elif re.match(r'\d{6}-R', filename):
         logging.info(f'HFpager message intercepted: {text}')
         bot.send_message(chat_id=chat_id, text=text,
@@ -173,7 +178,7 @@ def detect_request(text):
         mesg_from = match[1]
         mesg_to = match[2]
     # парсим =x{lat},{lon}: map_link -> web
-    match = re.search(r'^=x(-{0,1}\d{1,2}\.\d{1,6}),(-{0,1}\d{1,3}\.\d{1,6})',
+    match = re.search(r'.*x(-{0,1}\d{1,2}\.\d{1,6}),(-{0,1}\d{1,3}\.\d{1,6}).*',
                       parse_message)
     if match:
         mlat = match[1]
@@ -183,7 +188,7 @@ def detect_request(text):
         logging.info(f'HFpager -> MapLink: {message}')
         bot.send_message(chat_id=chat_id, text=message)
     # парсим =w{lat},{lon}: weather -> hf
-    match = re.search(r'^=w(-{0,1}\d{1,2}\.\d{1,6}),(-{0,1}\d{1,3}\.\d{1,6})',
+    match = re.search(r'^=x(-{0,1}\d{1,2}\.\d{1,6}),(-{0,1}\d{1,3}\.\d{1,6})',
                       parse_message)
     if match and mesg_to == str(my_id):
         mlat = match[1]
