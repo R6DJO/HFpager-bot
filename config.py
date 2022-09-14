@@ -1,8 +1,9 @@
-token = 'ТОКЕН'
-chat_id = ИД_ЧАТА
-beacon_chat_id = ИД_ЧАТА_МАЯКОВ
-my_id = ИД_МОЕГО_ПЕЙДЖЕРА
-abonent_id = ИД_ПЕЙДЖЕРА_КОРРЕСПОНДЕНТА_ПО_УМОЛЧАНИЮ
-owm_api_key = 'АПИ_КЕЙ_ОВМ'
-callsign = 'ПОЗЫВНОЙ_ШЛЮЗА'
+token = '5734819536:AAHf-wIHT8gcMNZbFVcRN76wrgcryTxgUkY'
+chat_id = -1001790007162
+beacon_chat_id = -718369338
+#beacon_chat_id = -520521663
+my_id = 78
+abonent_id = 0
+owm_api_key = 'f77f3e135256d88b00bbbe87986f8eff'
+callsign = 'R6DJO-PG'
 log_level = 'DEBUG'
