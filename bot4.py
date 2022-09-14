@@ -178,7 +178,7 @@ def detect_request(text):
         mesg_from = match[1]
         mesg_to = match[2]
     # парсим =x{lat},{lon}: map_link -> web
-    match = re.search(r'.*x(-{0,1}\d{1,2}\.\d{1,6}),(-{0,1}\d{1,3}\.\d{1,6}).*',
+    match = re.search(r'.*[xX](-{0,1}\d{1,2}\.\d{1,6}),(-{0,1}\d{1,3}\.\d{1,6}).*',
                       parse_message)
     if match:
         mlat = match[1]
@@ -188,7 +188,7 @@ def detect_request(text):
         logging.info(f'HFpager -> MapLink: {message}')
         bot.send_message(chat_id=chat_id, text=message)
     # парсим =w{lat},{lon}: weather -> hf
-    match = re.search(r'^=x(-{0,1}\d{1,2}\.\d{1,6}),(-{0,1}\d{1,3}\.\d{1,6})',
+    match = re.search(r'^=[xX](-{0,1}\d{1,2}\.\d{1,6}),(-{0,1}\d{1,3}\.\d{1,6}).*',
                       parse_message)
     if match and mesg_to == str(my_id):
         mlat = match[1]
