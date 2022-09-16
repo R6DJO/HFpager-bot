@@ -331,8 +331,8 @@ def send_bat_status(message):
         bot.reply_to(message, f"""
 Уровень заряда батареи: {b_level}%
 Статус батареи: {b_status}
-Температура: {b_temp}°C
-Ток потребления: {b_current}mA
+Температура: {b_temp:.0f}°C
+Ток потребления: {b_current:.0f}mA
 """)
         logging.info('Запрошен статус питания')
     except Exception as ex:
