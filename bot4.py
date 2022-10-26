@@ -15,7 +15,7 @@ import requests
 import logging
 
 from config import (abonent_id, callsign, chat_id, beacon_chat_id, my_id, token,
-                    owm_api_key, log_level)
+                    owm_api_key, log_level,system)
 
 
 logging.basicConfig(
@@ -69,15 +69,11 @@ def hfpager_restart():
 def hfpager_bot():
     while True:
         try:
-            subprocess.Popen(
-                'am start --user 0 '
-                '-n ru.radial.nogg.hfpager/'
-                'ru.radial.full.hfpager.MainActivity ',
-                stdout=subprocess.PIPE, shell=True)
-            logging.info('HFpager started')
+            start_hfpager()
             logging.info('HFpager message parsing is running')
-            pager_dir = ('/data/data/com.termux/files/home/storage/shared/'
-                         'Documents/HFpager/')
+            # pager_dir = ('/data/data/com.termux/files/home/storage/shared/'
+            #              'Documents/HFpager/')
+            pager_dir = ('./HfPagerForLinux/files/HFpager/')
             start_file_list = []
             for root, dirs, files in os.walk(pager_dir):
                 for file in files:
@@ -105,6 +101,19 @@ def hfpager_bot():
             logging.debug(f'Error: {ex}', exc_info=True)
         finally:
             time.sleep(2)
+
+def start_hfpager():
+    if system == 'ANDROID':
+        subprocess.Popen(
+                    'am start --user 0 '
+                    '-n ru.radial.nogg.hfpager/'
+                    'ru.radial.full.hfpager.MainActivity ',
+                    stdout=subprocess.PIPE, shell=True)
+    elif system == 'LINUX':
+        subprocess.Popen(
+                    'cd ./HfPagerForLinux/; ./hfp_rx 2>/dev/null',
+                    stdout=subprocess.PIPE, shell=True)
+    logging.info('HFpager started')
 
 
 def send_edit_msg(key, message):
