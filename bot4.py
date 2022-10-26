@@ -13,9 +13,10 @@ from datetime import datetime
 from textwrap import shorten
 import requests
 import logging
+from pprint import pformat
 
 from config import (abonent_id, callsign, chat_id, beacon_chat_id, my_id, token,
-                    owm_api_key, log_level,system)
+                    owm_api_key, log_level, system, hfpager_path)
 
 
 logging.basicConfig(
@@ -46,24 +47,25 @@ def bot_polling():
 
 
 def hfpager_restart():
-    logging.info('HFpager restart thread started')
-    while True:
-        try:
-            subprocess.Popen(
-                'am start --user 0 '
-                '-n ru.radial.nogg.hfpager/'
-                'ru.radial.full.hfpager.MainActivity '
-                '-a "android.intent.action.SEND" '
-                '--es "android.intent.extra.TEXT" "notext" '
-                '-t "text/plain" '
-                '--ei "android.intent.extra.INDEX" "99999"',
-                stdout=subprocess.PIPE, shell=True)
-            time.sleep(300)
-        except Exception as ex:
-            logging.error(f'HFpager restart thread: {ex}')
-            logging.debug(f'Error: {ex}', exc_info=True)
-        finally:
-            time.sleep(300)
+    if system == 'ANDROID':
+        logging.info('HFpager restart thread started')
+        while True:
+            try:
+                subprocess.Popen(
+                    'am start --user 0 '
+                    '-n ru.radial.nogg.hfpager/'
+                    'ru.radial.full.hfpager.MainActivity '
+                    '-a "android.intent.action.SEND" '
+                    '--es "android.intent.extra.TEXT" "notext" '
+                    '-t "text/plain" '
+                    '--ei "android.intent.extra.INDEX" "99999"',
+                    stdout=subprocess.PIPE, shell=True)
+                time.sleep(300)
+            except Exception as ex:
+                logging.error(f'HFpager restart thread: {ex}')
+                logging.debug(f'Error: {ex}', exc_info=True)
+            finally:
+                time.sleep(300)
 
 
 def hfpager_bot():
@@ -102,17 +104,18 @@ def hfpager_bot():
         finally:
             time.sleep(2)
 
+
 def start_hfpager():
     if system == 'ANDROID':
         subprocess.Popen(
-                    'am start --user 0 '
-                    '-n ru.radial.nogg.hfpager/'
-                    'ru.radial.full.hfpager.MainActivity ',
-                    stdout=subprocess.PIPE, shell=True)
+            'am start --user 0 '
+            '-n ru.radial.nogg.hfpager/'
+            'ru.radial.full.hfpager.MainActivity ',
+            stdout=subprocess.PIPE, shell=True)
     elif system == 'LINUX':
         subprocess.Popen(
-                    'cd ./HfPagerForLinux/; ./hfp_rx 2>/dev/null',
-                    stdout=subprocess.PIPE, shell=True)
+            f'cd {hfpager_path}; ./hfp_rx 2>/dev/null',
+            stdout=subprocess.PIPE, shell=True)
     logging.info('HFpager started')
 
 
@@ -136,6 +139,23 @@ def send_edit_msg(key, message):
 
 def parse_file(dir_filename, text):
     dirname, filename = dir_filename.split('/')
+    logging.info(dir_filename)
+    # 
+    # F1+F2 RO RE принято OK или ERROR
+    # F1+F2 S1-S5 - отправлено сколько раз
+    # F3 0 2 3 Flags: ACK REPEAT (0=!ACK+!REPEAT, 2=ACK+!REPEAT, 3=ACK+REPEAT)
+    # F3+F4 2P/3P=ACK 2N/3N=NACK 20/30=ACK запрошен, но не получен
+    # 
+    pattern = (r'(?P<DT_DATE>[\d-]{10})\.(?P<MSG_TYPE>[\D]{3})/'
+               r'(?P<DT_TIME>[\d]{6})-(?P<F1>[\D])(?P<F2>[\D])-'
+               r'(?P<F3>[\d]{0,1})(?P<F4>[\d])-(?P<MSG_NUM>[\d]{3})-(?P<MSG_LEN>[0-9A-F]{2})-'
+               r'(?P<HEAD_CRC>[0-9A-F]{4})-(?P<MSG_CRC>[0-9A-F]{4})-'
+               r'(?P<ID_FROM>[\d]{1,5}|~)_(?P<ID_TO>[\d]{1,5}|~)\.TXT')
+    match_object= re.search(pattern, dir_filename)
+    if match_object:
+        msg_meta= match_object.groupdict()
+        logging.info(pformat(msg_meta))
+    
     date = dirname.split('.')[0]
     time = filename.split('-')[0]
     key = f'{date} {time}'
@@ -222,6 +242,8 @@ def get_weather(lat, lon):
     if 'cod' in data:
         error = data['message']
         logging.error(f'HFpager get weather error: {error}')
+        bot.send_message(chat_id=chat_id,
+                         text=f'HFpager get weather error: {error}')
         return 'Error in weather'
     else:
         for day in data['daily'][:3]:
@@ -283,21 +305,26 @@ def parse_for_pager(message, abonent_id):
     pager_transmit(message, abonent_id, repeat)
 
 
-def pager_transmit(message, abonent_id, repeat):
+def pager_transmit(message, abonent_id, resend):
     short_text = shorten(message, width=35, placeholder="...")
-    logging.info(f'HFpager send to ID:{abonent_id} repeat:{repeat} '
+    logging.info(f'HFpager send to ID:{abonent_id} repeat:{resend} '
                  f'message: {short_text}')
-    subprocess.Popen(
-        'am start --user 0 '
-        '-n ru.radial.nogg.hfpager/ru.radial.full.hfpager.MainActivity '
-        '-a "android.intent.action.SEND" '
-        f'--es "android.intent.extra.TEXT" "{message.strip()}" '
-        '-t "text/plain" '
-        f'--ei "android.intent.extra.INDEX" "{abonent_id}" '
-        f'--es "android.intent.extra.SUBJECT" "Flags:1,{repeat}"',
-        stdout=subprocess.PIPE, shell=True)
-    # out = proc.stdout.read()
-    # return out
+    if system == 'ANDROID':
+        subprocess.Popen(
+            'am start --user 0 '
+            '-n ru.radial.nogg.hfpager/ru.radial.full.hfpager.MainActivity '
+            '-a "android.intent.action.SEND" '
+            f'--es "android.intent.extra.TEXT" "{message.strip()}" '
+            '-t "text/plain" '
+            f'--ei "android.intent.extra.INDEX" "{abonent_id}" '
+            f'--es "android.intent.extra.SUBJECT" "Flags:1,{resend}"',
+            stdout=subprocess.PIPE, shell=True)
+    elif system == 'LINUX':
+        speed = 4
+        askreq = 1
+        msg_shablon = (f'to={abonent_id},speed={speed},askreq={askreq},resend={resend}\n'
+                       f'{message.strip()}')
+        pass
 
 
 def power_status():
