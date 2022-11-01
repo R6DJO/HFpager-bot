@@ -233,7 +233,7 @@ def detect_request(text):
 
 
 def get_weather(lat, lon):
-    url = ('https://api.openweathermap.org/data/2.5/onecall?'
+    url = ('http://api.openweathermap.org/data/2.5/onecall?'
            f'lat={lat}&lon={lon}&exclude=minutely,hourly&appid={owm_api_key}'
            '&lang=ru&units=metric')
     resp = requests.get(url)
