@@ -194,41 +194,40 @@ def parse_file(dir_filename, text):
                          disable_notification=True)
 
 
-def detect_request(text):
-    mesg_from = 0
-    mesg_to = 0
-    parse_message = text.split('\n', maxsplit=1)[-1]
+def detect_request(msg_full):
+    msg_meta = {}
+    msg_meta["FROM"], msg_meta["TO"] = 0, 0
+    msg_text = msg_full.split('\n', maxsplit=1)[-1]
     # получаем id адресатов
-    match = re.search(r'^(\d{1,5}) \(\d+\) > (\d+).*', text)
+    match = re.search(
+        r'^(?P<FROM>\d{1,5}) \(\d{3}\) > (?P<TO>\d{1,5}).*', msg_full)
     if match:
-        mesg_from = match[1]
-        mesg_to = match[2]
+        msg_meta = match.groupdict()
     # парсим =x{lat},{lon}: map_link -> web
-    match = re.search(r'.*[xX](-{0,1}\d{1,2}\.\d{1,6}),'
-                      r'(-{0,1}\d{1,3}\.\d{1,6}).*',
-                      parse_message)
+    match = re.search(r'.*[xX](?P<LAT>-{0,1}\d{1,2}\.\d{1,6}),'
+                      r'(?P<LON>-{0,1}\d{1,3}\.\d{1,6}).*',
+                      msg_text)
     if match:
-        mlat = match[1]
-        mlon = match[2]
+        msg_geo = match.groupdict()
         message = ('https://www.openstreetmap.org/?'
-                   f'mlat={mlat}&mlon={mlon}&zoom=12')
+                   f'mlat={msg_geo["LAT"]}&mlon={msg_geo["LON"]}&zoom=12')
         logging.info(f'HFpager -> MapLink: {message}')
         bot.send_message(chat_id=chat_id, text=message)
-    # парсим =w{lat},{lon}: weather -> hf
-    match = re.search(r'^=[xX](-{0,1}\d{1,2}\.\d{1,6}),'
-                      r'(-{0,1}\d{1,3}\.\d{1,6}).*',
-                      parse_message)
-    if match and mesg_to == str(my_id):
-        mlat = match[1]
-        mlon = match[2]
-        logging.info(f'HFpager -> Weather: {mlat} {mlon}')
+    # парсим =x{lat},{lon}: weather -> hf
+    match = re.search(r'^=[xX](?P<LAT>-{0,1}\d{1,2}\.\d{1,6}),'
+                      r'(?P<LON>-{0,1}\d{1,3}\.\d{1,6}).*',
+                      msg_text)
+    if match and msg_meta["TO"] == my_id:
+        msg_geo = match.groupdict()
+        logging.info(f'HFpager -> Weather: {msg_geo["LAT"]} {msg_geo["LON"]}')
         bot.send_message(chat_id=chat_id,
-                         text=(f'{my_id}>{mesg_from} '
-                               f'weather in: {mlat} {mlon}'))
-        weather = get_weather(mlat, mlon)
+                         text=(f'{my_id}>{msg_meta["FROM"]} '
+                               f'weather in: {msg_geo["LAT"]} '
+                               f'{msg_geo["LON"]}'))
+        weather = get_weather(msg_geo["LAT"], msg_geo["LON"])
         split = smart_split(weather, 250)
         for part in split:
-            pager_transmit(part, mesg_from, 1)
+            pager_transmit(part, msg_meta["FROM"], 0)
 
 
 def pager_transmit(message, abonent_id, resend):
@@ -292,25 +291,27 @@ def send_bat_status(message):
 
 
 @bot.message_handler(func=lambda message: True)
-def echo_message(message):
+def input_message(message):
     # обрабатываем начинающиеся с > из чата chat_id
     if message.date > start_time and message.chat.id == chat_id:
-        reg = re.compile('^(?P<WHO>[0-9]{0,5})>(?P<WHOM>[0-9]{0,5})'
-                         '(?P<REPEAT>!{0,1})(?P<WHAT>[\\s\\S]+)')
+        reg = re.compile('^(?P<FROM>[0-9]{0,5})>(?P<TO>[0-9]{0,5})'
+                         '(?P<REPEAT>!{0,1})(?P<TEXT>[\\s\\S]+)')
         match = re.match(reg, message.text)
         if match:
             msg_meta = match.groupdict()
             logging.info(pformat(msg_meta))
-            if not match['WHO'] or match['WHO'] == my_id:
-                msg_to = msg_meta['WHOM'] or abonent_id
-                msg_text = msg_meta['WHAT'].strip()
-                repeat = 1 if msg_meta['REPEAT'] else 0
+            if not match['FROM'] or match['FROM'] == my_id:
+                msg_meta['TO'] = msg_meta['TO'] or abonent_id
+                msg_meta['TEXT'] = msg_meta['TEXT'].strip()
+                msg_meta['REPEAT'] = 1 if msg_meta['REPEAT'] else 0
                 short_text = shorten(message.text, width=35, placeholder="...")
                 logging.info(f'Bot receive message: {short_text}')
-                pager_transmit(msg_text, msg_to, repeat)
+                pager_transmit(msg_meta['TEXT'], msg_meta['TO'],
+                               msg_meta['REPEAT'])
                 message = bot.send_message(chat_id=chat_id,
                                            text=short_text)
-                bot_recieve_dict[msg_text] = {'message_id': message.message_id}
+                bot_recieve_dict[msg_meta['TEXT']] = {
+                    'message_id': message.message_id}
 
 
 if __name__ == "__main__":
