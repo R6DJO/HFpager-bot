@@ -17,7 +17,7 @@ from weather import get_weather
 
 
 logging.basicConfig(
-    filename='bot.log',
+    # filename='bot.log',
     level=log_level,
     format='%(asctime)s [%(levelname)s] %(message)s',
 )
@@ -310,26 +310,23 @@ def send_bat_status(message):
 def echo_message(message):
     # обрабатываем начинающиеся с > из чата chat_id
     if message.date > start_time and message.chat.id == chat_id:
-        reg = re.compile(f'^(?P<WHO>{my_id}{{0,1}})>(?P<WHOM>[0-9]{{1,5}})'
-                         '(?P<REPEAT>)(?P<WHAT>[\\s\\S]+)')
+        reg = re.compile('^(?P<WHO>[0-9]{0,5})>(?P<WHOM>[0-9]{0,5})'
+                         '(?P<REPEAT>!{0,1})(?P<WHAT>[\\s\\S]+)')
         match = re.match(reg, message.text)
         if match:
             msg_meta = match.groupdict()
             logging.info(pformat(msg_meta))
             short_text = shorten(message.text, width=35, placeholder="...")
             logging.info(f'Bot receive message: {short_text}')
-            if match.group(2):
-                text_parse = match.group(2) + match.group(3)
-            else:
-                text_parse = match.group(3)
-            parse_for_pager(text_parse, abonent_id)
+            # if match.group(2):
+            #     text_parse = match.group(2) + match.group(3)
+            # else:
+            #     text_parse = match.group(3)
+            msg_text = msg_meta['WHAT'].strip()
+            parse_for_pager(msg_text, msg_meta['WHOM'])
             message = bot.send_message(chat_id=chat_id,
                                        text=short_text)
-            key = match.group(3).strip()
-            key_match = re.match(r'^!(.+)', key)
-            if key_match:
-                key = key_match.group(1).strip()
-            bot_recieve_dict[key] = {
+            bot_recieve_dict[msg_text] = {
                 'message_id': message.message_id}
 
 
