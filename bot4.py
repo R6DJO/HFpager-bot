@@ -61,13 +61,15 @@ def hfpager_restart():
 
 
 def hfpager_bot():
+    if system == 'ANDROID':
+        pager_dir = ('/data/data/com.termux/files/home/storage/shared/'
+                     'Documents/HFpager/')
+    elif system == 'LINUX':
+        pager_dir = './HfPagerForLinux/files/HFpager/'
     while True:
         try:
             start_hfpager()
             logging.info('HFpager message parsing is running')
-            # pager_dir = ('/data/data/com.termux/files/home/storage/shared/'
-            #              'Documents/HFpager/')
-            pager_dir = ('./HfPagerForLinux/files/HFpager/')
             start_file_list = []
             for root, dirs, files in os.walk(pager_dir):
                 for file in files:
