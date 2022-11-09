@@ -1,6 +1,3 @@
-#!/bin/python
-# -*- coding: utf-8 -*-
-# import imp
 import re
 import json
 import telebot
@@ -9,14 +6,14 @@ import time
 import subprocess
 import os
 from threading import Thread
-from datetime import datetime
+
 from textwrap import shorten
-import requests
 import logging
 from pprint import pformat
 
-from config import (abonent_id, callsign, chat_id, beacon_chat_id, my_id, token,
-                    owm_api_key, log_level, system, hfpager_path)
+from config import (abonent_id, callsign, chat_id, beacon_chat_id, my_id,
+                    token, log_level, system, hfpager_path)
+from weather import get_weather
 
 
 logging.basicConfig(
@@ -28,11 +25,6 @@ logging.basicConfig(
 
 message_dict = {}
 bot_recieve_dict = {}
-
-
-def date_time_now():
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    return now
 
 
 def bot_polling():
@@ -60,7 +52,7 @@ def hfpager_restart():
                     '-t "text/plain" '
                     '--ei "android.intent.extra.INDEX" "99999"',
                     stdout=subprocess.PIPE, shell=True)
-                time.sleep(300)
+                # time.sleep(300)
             except Exception as ex:
                 logging.error(f'HFpager restart thread: {ex}')
                 logging.debug(f'Error: {ex}', exc_info=True)
@@ -140,22 +132,23 @@ def send_edit_msg(key, message):
 def parse_file(dir_filename, text):
     dirname, filename = dir_filename.split('/')
     logging.info(dir_filename)
-    # 
+    #
     # F1+F2 RO RE принято OK или ERROR
     # F1+F2 S1-S5 - отправлено сколько раз
     # F3 0 2 3 Flags: ACK REPEAT (0=!ACK+!REPEAT, 2=ACK+!REPEAT, 3=ACK+REPEAT)
     # F3+F4 2P/3P=ACK 2N/3N=NACK 20/30=ACK запрошен, но не получен
-    # 
+    #
     pattern = (r'(?P<DT_DATE>[\d-]{10})\.(?P<MSG_TYPE>[\D]{3})/'
                r'(?P<DT_TIME>[\d]{6})-(?P<F1>[\D])(?P<F2>[\D])-'
-               r'(?P<F3>[\d]{0,1})(?P<F4>[\d])-(?P<MSG_NUM>[\d]{3})-(?P<MSG_LEN>[0-9A-F]{2})-'
+               r'(?P<F3>[\d]{0,1})(?P<F4>[\d])-(?P<MSG_NUM>[\d]{3})-'
+               r'(?P<MSG_LEN>[0-9A-F]{2})-'
                r'(?P<HEAD_CRC>[0-9A-F]{4})-(?P<MSG_CRC>[0-9A-F]{4})-'
                r'(?P<ID_FROM>[\d]{1,5}|~)_(?P<ID_TO>[\d]{1,5}|~)\.TXT')
-    match_object= re.search(pattern, dir_filename)
+    match_object = re.search(pattern, dir_filename)
     if match_object:
-        msg_meta= match_object.groupdict()
+        msg_meta = match_object.groupdict()
         logging.info(pformat(msg_meta))
-    
+
     date = dirname.split('.')[0]
     time = filename.split('-')[0]
     key = f'{date} {time}'
@@ -207,7 +200,8 @@ def detect_request(text):
         mesg_from = match[1]
         mesg_to = match[2]
     # парсим =x{lat},{lon}: map_link -> web
-    match = re.search(r'.*[xX](-{0,1}\d{1,2}\.\d{1,6}),(-{0,1}\d{1,3}\.\d{1,6}).*',
+    match = re.search(r'.*[xX](-{0,1}\d{1,2}\.\d{1,6}),'
+                      r'(-{0,1}\d{1,3}\.\d{1,6}).*',
                       parse_message)
     if match:
         mlat = match[1]
@@ -217,7 +211,8 @@ def detect_request(text):
         logging.info(f'HFpager -> MapLink: {message}')
         bot.send_message(chat_id=chat_id, text=message)
     # парсим =w{lat},{lon}: weather -> hf
-    match = re.search(r'^=[xX](-{0,1}\d{1,2}\.\d{1,6}),(-{0,1}\d{1,3}\.\d{1,6}).*',
+    match = re.search(r'^=[xX](-{0,1}\d{1,2}\.\d{1,6}),'
+                      r'(-{0,1}\d{1,3}\.\d{1,6}).*',
                       parse_message)
     if match and mesg_to == str(my_id):
         mlat = match[1]
@@ -230,60 +225,6 @@ def detect_request(text):
         split = smart_split(weather, 250)
         for part in split:
             pager_transmit(part, mesg_from, 1)
-
-
-def get_weather(lat, lon):
-    url = ('http://api.openweathermap.org/data/2.5/onecall?'
-           f'lat={lat}&lon={lon}&exclude=minutely,hourly&appid={owm_api_key}'
-           '&lang=ru&units=metric')
-    resp = requests.get(url)
-    data = resp.json()
-    weather = ''
-    if 'cod' in data:
-        error = data['message']
-        logging.error(f'HFpager get weather error: {error}')
-        bot.send_message(chat_id=chat_id,
-                         text=f'HFpager get weather error: {error}')
-        return 'Error in weather'
-    else:
-        for day in data['daily'][:3]:
-            date = datetime.fromtimestamp(day['dt']).strftime('%m/%d')
-            temp_min = day['temp']['min']
-            temp_max = day['temp']['max']
-            clouds = day['clouds']
-            pop = day['pop']*100
-            wind_speed = day['wind_speed']
-            wind_gust = day['wind_gust']
-            weather_cond = day['weather'][0]['description']
-            wind_direct = get_wind_direction(day['wind_deg'])
-            weather += (f'{date} '
-                        f'Темп:{temp_min:.0f}…{temp_max:.0f}°C '
-                        f'Вет:{wind_direct} {wind_speed:.0f}…'
-                        f'{wind_gust:.0f}м/с {weather_cond} '
-                        f'Обл:{clouds}% Вер.ос:{pop:.0f}% ')
-            if 'rain' in day:
-                rain = day['rain']
-                weather += f'Дождь:{rain:.1f}мм '
-            if 'snow' in day:
-                rain = day['snow']
-                weather += f'Снег:{rain:.1f}мм '
-            weather += '\n'
-        return weather
-
-
-def get_wind_direction(deg):
-    wind = ''
-    direction = ['С ', 'СВ', 'В', 'ЮВ', 'Ю', 'ЮЗ', 'З', 'СЗ']
-    for i in range(0, 8):
-        step = 45.
-        min = i*step - 45/2.
-        max = i*step + 45/2.
-        if i == 0 and deg > 360-45/2.:
-            deg = deg - 360
-        if deg >= min and deg <= max:
-            wind = direction[i]
-            break
-    return wind
 
 
 def parse_for_pager(message, abonent_id):
@@ -322,21 +263,10 @@ def pager_transmit(message, abonent_id, resend):
     elif system == 'LINUX':
         speed = 4
         askreq = 1
-        msg_shablon = (f'to={abonent_id},speed={speed},askreq={askreq},resend={resend}\n'
+        msg_shablon = (f'to={abonent_id},speed={speed},'
+                       f'askreq={askreq},resend={resend}\n'
                        f'{message.strip()}')
-        pass
-
-
-def power_status():
-    try:
-        battery = json.loads(
-            subprocess.run(['termux-battery-status'],
-                           stdout=subprocess.PIPE).stdout.decode('utf-8'))
-        b_status = battery['status']
-    except Exception as ex:
-        logging.error(f'HFpager battery-status error: {ex}')
-        b_status = 'UNKNOWN'
-    return b_status
+        print(msg_shablon)
 
 
 bot = telebot.TeleBot(token)
@@ -378,11 +308,14 @@ def send_bat_status(message):
 
 @bot.message_handler(func=lambda message: True)
 def echo_message(message):
-    # обрабатываем начинающиеся с >
+    # обрабатываем начинающиеся с > из чата chat_id
     if message.date > start_time and message.chat.id == chat_id:
-        reg = re.compile(f'^({my_id})*>([0-9]{{1,5}})*([\s\S]+)')
+        reg = re.compile(f'^(?P<WHO>{my_id}{{0,1}})>(?P<WHOM>[0-9]{{1,5}})'
+                         '(?P<REPEAT>)(?P<WHAT>[\\s\\S]+)')
         match = re.match(reg, message.text)
         if match:
+            msg_meta = match.groupdict()
+            logging.info(pformat(msg_meta))
             short_text = shorten(message.text, width=35, placeholder="...")
             logging.info(f'Bot receive message: {short_text}')
             if match.group(2):
