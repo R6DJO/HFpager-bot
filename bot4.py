@@ -66,6 +66,8 @@ def hfpager_bot():
                      'Documents/HFpager/')
     elif system == 'LINUX':
         pager_dir = './HfPagerForLinux/files/HFpager/'
+    else:
+        pager_dir = './'
     while True:
         try:
             start_hfpager()
@@ -229,25 +231,6 @@ def detect_request(text):
             pager_transmit(part, mesg_from, 1)
 
 
-def parse_for_pager(message, abonent_id):
-    # > обрезаем заранее
-    # сообщение >[id][text] -> [id]
-    match = re.match(r'^(\d{1,5})(\D.+)', message)
-    if match:
-        abonent_id = match.group(1)
-        message = match.group(2)
-
-    # сообщение начинается с ! -> бит повтора 1
-    match = re.match(r'^!(.+)', message)
-    if match:
-        repeat = 1
-        message = match.group(1)
-    else:
-        repeat = 0
-
-    pager_transmit(message, abonent_id, repeat)
-
-
 def pager_transmit(message, abonent_id, resend):
     short_text = shorten(message, width=35, placeholder="...")
     logging.info(f'HFpager send to ID:{abonent_id} repeat:{resend} '
@@ -318,18 +301,16 @@ def echo_message(message):
         if match:
             msg_meta = match.groupdict()
             logging.info(pformat(msg_meta))
-            short_text = shorten(message.text, width=35, placeholder="...")
-            logging.info(f'Bot receive message: {short_text}')
-            # if match.group(2):
-            #     text_parse = match.group(2) + match.group(3)
-            # else:
-            #     text_parse = match.group(3)
-            msg_text = msg_meta['WHAT'].strip()
-            parse_for_pager(msg_text, msg_meta['WHOM'])
-            message = bot.send_message(chat_id=chat_id,
-                                       text=short_text)
-            bot_recieve_dict[msg_text] = {
-                'message_id': message.message_id}
+            if not match['WHO'] or match['WHO'] == my_id:
+                msg_to = msg_meta['WHOM'] or abonent_id
+                msg_text = msg_meta['WHAT'].strip()
+                repeat = 1 if msg_meta['REPEAT'] else 0
+                short_text = shorten(message.text, width=35, placeholder="...")
+                logging.info(f'Bot receive message: {short_text}')
+                pager_transmit(msg_text, msg_to, repeat)
+                message = bot.send_message(chat_id=chat_id,
+                                           text=short_text)
+                bot_recieve_dict[msg_text] = {'message_id': message.message_id}
 
 
 if __name__ == "__main__":
