@@ -217,17 +217,19 @@ def detect_request(msg_full):
     match = re.search(r'^=[xX](?P<LAT>-{0,1}\d{1,2}\.\d{1,6}),'
                       r'(?P<LON>-{0,1}\d{1,3}\.\d{1,6}).*',
                       msg_text)
-    if match and msg_meta["TO"] == my_id:
+    if match:
         msg_geo = match.groupdict()
-        logging.info(f'HFpager -> Weather: {msg_geo["LAT"]} {msg_geo["LON"]}')
-        bot.send_message(chat_id=chat_id,
-                         text=(f'{my_id}>{msg_meta["FROM"]} '
-                               f'weather in: {msg_geo["LAT"]} '
-                               f'{msg_geo["LON"]}'))
-        weather = get_weather(msg_geo["LAT"], msg_geo["LON"])
-        split = smart_split(weather, 250)
-        for part in split:
-            pager_transmit(part, msg_meta["FROM"], 0)
+        if msg_meta["TO"] == my_id:
+            logging.info(f'HFpager -> Weather: {msg_geo["LAT"]} '
+                         f'{msg_geo["LON"]}')
+            bot.send_message(chat_id=chat_id,
+                             text=(f'{my_id}>{msg_meta["FROM"]} '
+                                   f'weather in: {msg_geo["LAT"]} '
+                                   f'{msg_geo["LON"]}'))
+            weather = get_weather(msg_geo["LAT"], msg_geo["LON"])
+            split = smart_split(weather, 250)
+            for part in split:
+                pager_transmit(part, msg_meta["FROM"], 0)
 
 
 def pager_transmit(message, abonent_id, resend):
