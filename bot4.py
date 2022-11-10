@@ -9,7 +9,7 @@ from threading import Thread
 
 from textwrap import shorten
 import logging
-from pprint import pformat
+from pprint import pformat, pprint
 
 from config import (abonent_id, callsign, chat_id, beacon_chat_id, my_id,
                     token, log_level, system, hfpager_path)
@@ -219,6 +219,8 @@ def detect_request(msg_full):
                       msg_text)
     if match:
         msg_geo = match.groupdict()
+        pprint(match)
+        pprint(msg_geo)
         if int(msg_meta["TO"]) == my_id:
             logging.info(f'HFpager -> Weather: {msg_geo["LAT"]} '
                          f'{msg_geo["LON"]}')
