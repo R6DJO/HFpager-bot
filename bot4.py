@@ -219,7 +219,7 @@ def detect_request(msg_full):
                       msg_text)
     if match:
         msg_geo = match.groupdict()
-        if msg_meta["TO"] == my_id:
+        if int(msg_meta["TO"]) == my_id:
             logging.info(f'HFpager -> Weather: {msg_geo["LAT"]} '
                          f'{msg_geo["LON"]}')
             bot.send_message(chat_id=chat_id,
