@@ -6,14 +6,14 @@ import time
 import subprocess
 import os
 from threading import Thread
-
 from textwrap import shorten
 import logging
-from pprint import pformat, pprint
+from pprint import pformat
+
+from weather import get_weather
 
 from config import (abonent_id, callsign, chat_id, beacon_chat_id, my_id,
                     token, log_level, system, hfpager_path)
-from weather import get_weather
 
 
 logging.basicConfig(
@@ -31,8 +31,8 @@ def bot_polling():
     logging.info('Bot polling is running')
     while True:
         try:
-            bot.polling(interval=5)
             logging.debug('Bot polling')
+            bot.polling(interval=5)
         except Exception as ex:
             logging.error(f'Bot polling error: {ex}')
             logging.debug(f'Error: {ex}', exc_info=True)
@@ -219,8 +219,6 @@ def detect_request(msg_full):
                       msg_text)
     if match:
         msg_geo = match.groupdict()
-        pprint(match)
-        pprint(msg_geo)
         if int(msg_meta["TO"]) == my_id:
             logging.info(f'HFpager -> Weather: {msg_geo["LAT"]} '
                          f'{msg_geo["LON"]}')
@@ -304,7 +302,7 @@ def input_message(message):
         if match:
             msg_meta = match.groupdict()
             logging.info(pformat(msg_meta))
-            if not match['FROM'] or match['FROM'] == my_id:
+            if not msg_meta['FROM'] or msg_meta['FROM'] == my_id:
                 msg_meta['TO'] = msg_meta['TO'] or abonent_id
                 msg_meta['TEXT'] = msg_meta['TEXT'].strip()
                 msg_meta['REPEAT'] = 1 if msg_meta['REPEAT'] else 0
