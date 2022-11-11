@@ -65,7 +65,7 @@ def hfpager_bot():
         pager_dir = ('/data/data/com.termux/files/home/storage/shared/'
                      'Documents/HFpager/')
     elif system == 'LINUX':
-        pager_dir = './HfPagerForLinux/files/HFpager/'
+        pager_dir = hfpager_path + 'files/HFpager/'
     else:
         pager_dir = './'
     while True:
@@ -258,6 +258,10 @@ def pager_transmit(message, abonent_id, speed, resend):
                        f'askreq={ackreq},resend={resend}\n'
                        f'{message.strip()}')
         logging.info(msg_shablon)
+        with open(hfpager_path + 'files/to_send/new.ms', 'w', encoding='cp1251') as f:
+            f.write(msg_shablon)
+        os.rename(hfpager_path + 'files/to_send/new.ms', hfpager_path + 'files/to_send/new.msg')
+        time.sleep(1)
 
 
 bot = telebot.TeleBot(token)
