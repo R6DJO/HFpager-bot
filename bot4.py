@@ -205,6 +205,7 @@ def detect_request(msg_full):
     match = re.search(regexp, msg_full)
     if match:
         msg_meta = match.groupdict()
+        logging.info(pformat(msg_meta))
         msg_meta['SPEED'] = get_speed(msg_meta['SPEED'])
         logging.info(pformat(msg_meta))
     # парсим =x{lat},{lon}: map_link -> web
