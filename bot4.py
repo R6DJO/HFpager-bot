@@ -242,7 +242,7 @@ def detect_request(msg_full):
     if match and msg_meta['TO'] == str(my_id):
         if msg_meta['FROM'] in mailbox.keys():
             logging.info(f'{msg_meta["FROM"]} request from mailbox')
-            pager_transmit(mailbox[msg_meta['FROM']], msg_meta["FROM"], msg_meta['SPEED'], 0)
+            pager_transmit(mailbox[msg_meta['FROM']] + msg_end, msg_meta["FROM"], msg_meta['SPEED'], 0)
         else:
             logging.info(f'No msg to {msg_meta["FROM"]} in mailbox')
             pager_transmit('No msg', msg_meta["FROM"], msg_meta['SPEED'], 0)
@@ -331,7 +331,7 @@ def parse_bot_to_radio(message):
         msg_meta = match.groupdict()
         logging.info(pformat(msg_meta))
         if msg_meta['FROM'] == '' or msg_meta['FROM'] == str(my_id):
-            msg_meta['TO'] = msg_meta['TO'] or abonent_id
+            msg_meta['TO'] = msg_meta['TO'] or str(abonent_id)
             msg_meta['TEXT'] = msg_meta['TEXT'].strip()
             msg_meta['REPEAT'] = 1 if msg_meta['REPEAT'] else 0
             msg_meta['SPEED'] = get_speed(msg_meta['SPEED'].strip("sS="))
