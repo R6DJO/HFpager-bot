@@ -226,8 +226,8 @@ def detect_request(msg_full):
                              text=(f'{my_id}>{msg_meta["FROM"]} '
                                    f'weather in: {msg_geo["LAT"]} '
                                    f'{msg_geo["LON"]}'))
-            weather = get_weather(msg_geo["LAT"], msg_geo["LON"])
-            split = smart_split(weather, 250) + msg_end
+            weather = get_weather(msg_geo["LAT"], msg_geo["LON"]) + msg_end
+            split = smart_split(weather, 250)
             for part in split:
                 pager_transmit(part, msg_meta["FROM"], 0)
 
