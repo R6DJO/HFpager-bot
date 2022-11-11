@@ -258,6 +258,10 @@ def pager_transmit(message, abonent_id, speed, resend):
                        f'askreq={ackreq},resend={resend}\n'
                        f'{message.strip()}')
         logging.info(msg_shablon)
+        with open('new.ms', 'w', encoding='cp1251') as f:
+            f.write(msg_shablon)
+        os.rename('new.ms', 'new.msg')
+        time.sleep(1)
 
 
 bot = telebot.TeleBot(token)
