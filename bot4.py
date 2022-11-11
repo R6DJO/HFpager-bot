@@ -345,7 +345,7 @@ def get_speed(speed):
         '46': 32,
         '47': 32
     }
-    speed = speed[2:]
+    speed = speed.strip("sS=")
     return sp_data[speed] if speed in sp_data.keys() else 0
 
 
