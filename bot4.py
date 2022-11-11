@@ -200,19 +200,18 @@ def detect_request(msg_full):
     msg_meta["FROM"], msg_meta["TO"] = 0, 0
     msg_text = msg_full.split('\n', maxsplit=1)[-1]
     # получаем id адресатов
-    regexp = re.compile(
-        '^(?P<FROM>[0-9]{1,5}) \\([0-9]{3}\\) > '
-        '(?P<TO>[0-9]{1,5}), '
-        '(?P<SPEED>[0-9]{1,2}\\.{0,1}[0-9]{0,1}) Bd.*')
-    match = re.search(regexp, msg_full)
+    match = re.match(r'(?P<FROM>\d{1,5}) \(\d{3}\) > '
+                     r'(?P<TO>[0-9]{1,5}), '
+                     r'(?P<SPEED>\d{1,2}\.{0,1}\d{0,1}) Bd',
+                     msg_full)
     if match:
         msg_meta = match.groupdict()
         logging.info(pformat(msg_meta))
         msg_meta['SPEED'] = get_speed(msg_meta['SPEED'])
-        logging.info(pformat(msg_meta))
-    # парсим =x{lat},{lon}: map_link -> web
-    match = re.search(r'.*[xX](?P<LAT>-{0,1}\d{1,2}\.\d{1,6}),'
-                      r'(?P<LON>-{0,1}\d{1,3}\.\d{1,6}).*',
+        # logging.info(pformat(msg_meta))
+    # парсим {lat},{lon}: map_link -> web
+    match = re.search(r'(?P<LAT>-{0,1}\d{1,2}\.\d{1,8}),'
+                      r'(?P<LON>-{0,1}\d{1,3}\.\d{1,8})',
                       msg_text)
     if match:
         msg_geo = match.groupdict()
@@ -221,9 +220,9 @@ def detect_request(msg_full):
         logging.info(f'HFpager -> MapLink: {message}')
         bot.send_message(chat_id=chat_id, text=message)
     # парсим =x{lat},{lon}: weather -> hf
-    match = re.search(r'^=[xX](?P<LAT>-{0,1}\d{1,2}\.\d{1,6}),'
-                      r'(?P<LON>-{0,1}\d{1,3}\.\d{1,6}).*',
-                      msg_text)
+    match = re.match(r'=[xX](?P<LAT>-{0,1}\d{1,2}\.\d{1,8}),'
+                     r'(?P<LON>-{0,1}\d{1,3}\.\d{1,8})',
+                     msg_text)
     if match:
         msg_geo = match.groupdict()
         if int(msg_meta["TO"]) == my_id:
@@ -231,18 +230,19 @@ def detect_request(msg_full):
                          f'{msg_geo["LON"]}')
             bot.send_message(chat_id=chat_id,
                              text=(f'{my_id}>{msg_meta["FROM"]} '
-                                   f'weather in: {msg_geo["LAT"]} '
+                                   f'weather in {msg_geo["LAT"]},'
                                    f'{msg_geo["LON"]}'))
             weather = get_weather(msg_geo["LAT"], msg_geo["LON"]) + msg_end
             split = smart_split(weather, 250)
             for part in split:
                 pager_transmit(part, msg_meta["FROM"], msg_meta['SPEED'], 0)
-    
-    match = re.match(r'^=[tT]',msg_text)
+
+    match = re.match(r'=[gGtT]', msg_text)
     if match and msg_meta['TO'] == str(my_id):
         if msg_meta['FROM'] in mailbox.keys():
             logging.info(f'{msg_meta["FROM"]} request from mailbox')
-            pager_transmit(mailbox[msg_meta['FROM']] + msg_end, msg_meta["FROM"], msg_meta['SPEED'], 0)
+            pager_transmit(mailbox[msg_meta['FROM']] + msg_end,
+                           msg_meta["FROM"], msg_meta['SPEED'], 0)
         else:
             logging.info(f'No msg to {msg_meta["FROM"]} in mailbox')
             pager_transmit('No msg', msg_meta["FROM"], msg_meta['SPEED'], 0)
@@ -268,9 +268,11 @@ def pager_transmit(message, abonent_id, speed, resend):
                        f'askreq={ackreq},resend={resend}\n'
                        f'{message.strip()}')
         logging.info(msg_shablon)
-        with open(hfpager_path + 'files/to_send/new.ms', 'w', encoding='cp1251') as f:
+        with open(hfpager_path + 'files/to_send/new.ms', 'w',
+                  encoding='cp1251') as f:
             f.write(msg_shablon)
-        os.rename(hfpager_path + 'files/to_send/new.ms', hfpager_path + 'files/to_send/new.msg')
+        os.rename(hfpager_path + 'files/to_send/new.ms',
+                  hfpager_path + 'files/to_send/new.msg')
         time.sleep(1)
 
 
