@@ -320,7 +320,7 @@ def bot_to_radio(message):
             msg_meta['TO'] = msg_meta['TO'] or abonent_id
             msg_meta['TEXT'] = msg_meta['TEXT'].strip()
             msg_meta['REPEAT'] = 1 if msg_meta['REPEAT'] else 0
-            msg_meta['SPEED'] = get_speed(msg_meta['SPEED'])
+            msg_meta['SPEED'] = get_speed(msg_meta['SPEED'].strip("sS="))
             short_text = shorten(message.text, width=35, placeholder="...")
             logging.info(f'Bot receive message: {short_text}')
             pager_transmit(msg_meta['TEXT'] + msg_end, msg_meta['TO'],
@@ -345,7 +345,6 @@ def get_speed(speed):
         '46': 32,
         '47': 32
     }
-    speed = speed.strip("sS=")
     return sp_data[speed] if speed in sp_data.keys() else 0
 
 
