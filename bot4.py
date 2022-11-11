@@ -1,26 +1,26 @@
-import re
 import json
+import logging
+import os
+from pprint import pformat
+import re
+import subprocess
+import time
+from textwrap import shorten
+from threading import Thread
+
 import telebot
 from telebot.util import smart_split
-import time
-import subprocess
-import os
-from threading import Thread
-from textwrap import shorten
-import logging
-from pprint import pformat
 
-from weather import get_weather
+from utils import get_weather, get_speed
 
-from config import (abonent_id, callsign, chat_id, beacon_chat_id, my_id,
-                    token, log_level, system, hfpager_path, msg_end)
+from config import (abonent_id, beacon_chat_id, callsign, chat_id,
+                    hfpager_path, log_level, msg_end, my_id, system, token)
 
 
 logging.basicConfig(
-    # filename='bot.log',
+    filename='bot.log',
     level=log_level,
-    format='%(asctime)s [%(levelname)s] %(message)s',
-)
+    format='%(asctime)s [%(levelname)s] %(message)s')
 
 
 message_dict = {}
@@ -199,10 +199,16 @@ def detect_request(msg_full):
     msg_meta["FROM"], msg_meta["TO"] = 0, 0
     msg_text = msg_full.split('\n', maxsplit=1)[-1]
     # получаем id адресатов
-    match = re.search(
-        r'^(?P<FROM>\d{1,5}) \(\d{3}\) > (?P<TO>\d{1,5}).*', msg_full)
+    regexp = re.compile(
+        '^(?P<FROM>[0-9]{1,5}) \\([0-9]{3}\\) > '
+        '(?P<TO>[0-9]{1,5}), '
+        '(?P<SPEED>[0-9]{1,2}\\.{0,1}[0-9]{0,1}) Bd.*')
+    match = re.search(regexp, msg_full)
     if match:
         msg_meta = match.groupdict()
+        logging.info(pformat(msg_meta))
+        msg_meta['SPEED'] = get_speed(msg_meta['SPEED'])
+        logging.info(pformat(msg_meta))
     # парсим =x{lat},{lon}: map_link -> web
     match = re.search(r'.*[xX](?P<LAT>-{0,1}\d{1,2}\.\d{1,6}),'
                       r'(?P<LON>-{0,1}\d{1,3}\.\d{1,6}).*',
@@ -229,10 +235,10 @@ def detect_request(msg_full):
             weather = get_weather(msg_geo["LAT"], msg_geo["LON"]) + msg_end
             split = smart_split(weather, 250)
             for part in split:
-                pager_transmit(part, msg_meta["FROM"], 0)
+                pager_transmit(part, msg_meta["FROM"], msg_meta['SPEED'], 0)
 
 
-def pager_transmit(message, abonent_id, resend):
+def pager_transmit(message, abonent_id, speed, resend):
     short_text = shorten(message, width=35, placeholder="...")
     logging.info(f'HFpager send to ID:{abonent_id} repeat:{resend} '
                  f'message: {short_text}')
@@ -247,12 +253,11 @@ def pager_transmit(message, abonent_id, resend):
             f'--es "android.intent.extra.SUBJECT" "Flags:1,{resend}"',
             stdout=subprocess.PIPE, shell=True)
     elif system == 'LINUX':
-        speed = 4
-        askreq = 1
+        ackreq = 1
         msg_shablon = (f'to={abonent_id},speed={speed},'
-                       f'askreq={askreq},resend={resend}\n'
+                       f'askreq={ackreq},resend={resend}\n'
                        f'{message.strip()}')
-        print(msg_shablon)
+        logging.info(msg_shablon)
 
 
 bot = telebot.TeleBot(token)
@@ -296,24 +301,34 @@ def send_bat_status(message):
 def input_message(message):
     # обрабатываем начинающиеся с > из чата chat_id
     if message.date > start_time and message.chat.id == chat_id:
-        reg = re.compile('^(?P<FROM>[0-9]{0,5})>(?P<TO>[0-9]{0,5})'
-                         '(?P<REPEAT>!{0,1})(?P<TEXT>[\\s\\S]+)')
-        match = re.match(reg, message.text)
-        if match:
-            msg_meta = match.groupdict()
-            logging.info(pformat(msg_meta))
-            if not msg_meta['FROM'] or msg_meta['FROM'] == my_id:
-                msg_meta['TO'] = msg_meta['TO'] or abonent_id
-                msg_meta['TEXT'] = msg_meta['TEXT'].strip()
-                msg_meta['REPEAT'] = 1 if msg_meta['REPEAT'] else 0
-                short_text = shorten(message.text, width=35, placeholder="...")
-                logging.info(f'Bot receive message: {short_text}')
-                pager_transmit(msg_meta['TEXT'] + msg_end, msg_meta['TO'],
-                               msg_meta['REPEAT'])
-                message = bot.send_message(chat_id=chat_id,
-                                           text=short_text)
-                bot_recieve_dict[msg_meta['TEXT']] = {
-                    'message_id': message.message_id}
+        parse_bot_to_radio(message)
+
+
+def parse_bot_to_radio(message):
+    '''
+    парсим сообщения типа 123>321! текст
+    '''
+    reg = re.compile('^(?P<FROM>[0-9]{0,5})>(?P<TO>[0-9]{0,5})'
+                     '(?P<REPEAT>!{0,1})'
+                     '\\s*(?P<SPEED>([sS]=[0-9]{1,2}\\.{0,1}[0-9]{0,1}){0,1})'
+                     '(?P<TEXT>[\\s\\S]+)')
+    match = re.match(reg, message.text)
+    if match:
+        msg_meta = match.groupdict()
+        logging.info(pformat(msg_meta))
+        if msg_meta['FROM'] == '' or msg_meta['FROM'] == str(my_id):
+            msg_meta['TO'] = msg_meta['TO'] or abonent_id
+            msg_meta['TEXT'] = msg_meta['TEXT'].strip()
+            msg_meta['REPEAT'] = 1 if msg_meta['REPEAT'] else 0
+            msg_meta['SPEED'] = get_speed(msg_meta['SPEED'].strip("sS="))
+            short_text = shorten(message.text, width=35, placeholder="...")
+            logging.info(f'Bot receive message: {short_text}')
+            pager_transmit(msg_meta['TEXT'] + msg_end, msg_meta['TO'],
+                           msg_meta['SPEED'], msg_meta['REPEAT'])
+            message = bot.send_message(chat_id=chat_id,
+                                       text=short_text)
+            bot_recieve_dict[msg_meta['TEXT']] = {
+                'message_id': message.message_id}
 
 
 if __name__ == "__main__":
