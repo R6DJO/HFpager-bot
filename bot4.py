@@ -201,7 +201,7 @@ def detect_request(msg_full):
     regexp = re.compile(
         '^(?P<FROM>[0-9]{1,5}) \\([0-9]{3}\\) > '
         '(?P<TO>[0-9]{1,5}), '
-        '(?P<SPEED>([sS]=[0-9]{1,2}\\.{0,1}[0-9]{0,1}){0,1}) Bd.*')
+        '(?P<SPEED>[0-9]{1,2}\\.{0,1}[0-9]{0,1}) Bd.*')
     match = re.search(regexp, msg_full)
     if match:
         msg_meta = match.groupdict()
