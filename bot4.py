@@ -1,25 +1,26 @@
 import json
 import logging
 import os
+from pprint import pformat
 import re
 import subprocess
 import time
-from pprint import pformat
 from textwrap import shorten
 from threading import Thread
 
 import telebot
 from telebot.util import smart_split
 
+from utils import get_weather, get_speed
+
 from config import (abonent_id, beacon_chat_id, callsign, chat_id,
                     hfpager_path, log_level, msg_end, my_id, system, token)
-from weather import get_weather
+
 
 logging.basicConfig(
-    # filename='bot.log',
+    filename='bot.log',
     level=log_level,
-    format='%(asctime)s [%(levelname)s] %(message)s',
-)
+    format='%(asctime)s [%(levelname)s] %(message)s')
 
 
 message_dict = {}
@@ -252,12 +253,11 @@ def pager_transmit(message, abonent_id, speed, resend):
             f'--es "android.intent.extra.SUBJECT" "Flags:1,{resend}"',
             stdout=subprocess.PIPE, shell=True)
     elif system == 'LINUX':
-        # speed = 4
-        askreq = 1
+        ackreq = 1
         msg_shablon = (f'to={abonent_id},speed={speed},'
-                       f'askreq={askreq},resend={resend}\n'
+                       f'askreq={ackreq},resend={resend}\n'
                        f'{message.strip()}')
-        print(msg_shablon)
+        logging.info(msg_shablon)
 
 
 bot = telebot.TeleBot(token)
@@ -301,10 +301,10 @@ def send_bat_status(message):
 def input_message(message):
     # обрабатываем начинающиеся с > из чата chat_id
     if message.date > start_time and message.chat.id == chat_id:
-        bot_to_radio(message)
+        parse_bot_to_radio(message)
 
 
-def bot_to_radio(message):
+def parse_bot_to_radio(message):
     '''
     парсим сообщения типа 123>321! текст
     '''
@@ -329,23 +329,6 @@ def bot_to_radio(message):
                                        text=short_text)
             bot_recieve_dict[msg_meta['TEXT']] = {
                 'message_id': message.message_id}
-
-
-def get_speed(speed):
-    sp_data = {
-        '1': 1,
-        '1.5': 1,
-        '2': 4,
-        '3': 16,
-        '4': 32,
-        '5': 4,
-        '5.9': 4,
-        '6': 4,
-        '23': 16,
-        '46': 32,
-        '47': 32
-    }
-    return sp_data[speed] if speed in sp_data.keys() else 0
 
 
 if __name__ == "__main__":

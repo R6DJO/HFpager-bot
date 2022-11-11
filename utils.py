@@ -57,3 +57,20 @@ def get_wind_direction(deg):
             wind = direction[i]
             break
     return wind
+
+
+def get_speed(speed):
+    sp_data = {
+        '1': 1,
+        '1.5': 1,
+        '2': 4,
+        '3': 16,
+        '4': 32,
+        '5': 4,
+        '5.9': 4,
+        '6': 4,
+        '23': 16,
+        '46': 32,
+        '47': 32
+    }
+    return sp_data[speed] if speed in sp_data.keys() else 0
