@@ -25,6 +25,7 @@ logging.basicConfig(
 
 message_dict = {}
 bot_recieve_dict = {}
+mailbox = {}
 
 
 def bot_polling():
@@ -236,6 +237,15 @@ def detect_request(msg_full):
             split = smart_split(weather, 250)
             for part in split:
                 pager_transmit(part, msg_meta["FROM"], msg_meta['SPEED'], 0)
+    
+    match = re.match(r'^=[tT]',msg_text)
+    if match and msg_meta['TO'] == str(my_id):
+        if msg_meta['FROM'] in mailbox.keys():
+            logging.info(f'{msg_meta["FROM"]} request from mailbox')
+            pager_transmit(mailbox[msg_meta['FROM']], msg_meta["FROM"], msg_meta['SPEED'], 0)
+        else:
+            logging.info(f'No msg to {msg_meta["FROM"]} in mailbox')
+            pager_transmit('No msg', msg_meta["FROM"], msg_meta['SPEED'], 0)
 
 
 def pager_transmit(message, abonent_id, speed, resend):
@@ -333,6 +343,7 @@ def parse_bot_to_radio(message):
                                        text=short_text)
             bot_recieve_dict[msg_meta['TEXT']] = {
                 'message_id': message.message_id}
+            mailbox[msg_meta['TO']] = msg_meta['TEXT']
 
 
 if __name__ == "__main__":
