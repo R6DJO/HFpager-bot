@@ -13,7 +13,7 @@ from pprint import pformat
 from weather import get_weather
 
 from config import (abonent_id, callsign, chat_id, beacon_chat_id, my_id,
-                    token, log_level, system, hfpager_path)
+                    token, log_level, system, hfpager_path, msg_end)
 
 
 logging.basicConfig(
@@ -227,7 +227,7 @@ def detect_request(msg_full):
                                    f'weather in: {msg_geo["LAT"]} '
                                    f'{msg_geo["LON"]}'))
             weather = get_weather(msg_geo["LAT"], msg_geo["LON"])
-            split = smart_split(weather, 250)
+            split = smart_split(weather, 250) + msg_end
             for part in split:
                 pager_transmit(part, msg_meta["FROM"], 0)
 
@@ -308,7 +308,7 @@ def input_message(message):
                 msg_meta['REPEAT'] = 1 if msg_meta['REPEAT'] else 0
                 short_text = shorten(message.text, width=35, placeholder="...")
                 logging.info(f'Bot receive message: {short_text}')
-                pager_transmit(msg_meta['TEXT'], msg_meta['TO'],
+                pager_transmit(msg_meta['TEXT'] + msg_end, msg_meta['TO'],
                                msg_meta['REPEAT'])
                 message = bot.send_message(chat_id=chat_id,
                                            text=short_text)
