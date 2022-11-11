@@ -65,7 +65,7 @@ def hfpager_bot():
         pager_dir = ('/data/data/com.termux/files/home/storage/shared/'
                      'Documents/HFpager/')
     elif system == 'LINUX':
-        pager_dir = pager_dir = hfpager_path + 'files/HFpager/'
+        pager_dir = hfpager_path + 'files/HFpager/'
     else:
         pager_dir = './'
     while True:
