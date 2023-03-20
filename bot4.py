@@ -113,7 +113,7 @@ def start_hfpager():
             stdout=subprocess.PIPE, shell=True)
     elif system == 'LINUX':
         subprocess.Popen(
-            f'cd {hfpager_path}; ./hfp_rx 2>/dev/null',
+            f'cd {hfpager_path}; ./start.sh',
             stdout=subprocess.PIPE, shell=True)
     logging.info('HFpager started')
 
