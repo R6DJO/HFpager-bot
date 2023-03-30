@@ -1,83 +1,80 @@
-#!/bin/python
-# -*- coding: utf-8 -*-
-# import imp
-import re
+#!/usr/bin/env python
+
 import json
+import logging
+import os
+from pprint import pformat
+import re
+import subprocess
+import time
+from textwrap import shorten
+from threading import Thread
+
 import telebot
 from telebot.util import smart_split
-import time
-import subprocess
-import os
-from threading import Thread
-from datetime import datetime
-from textwrap import shorten
-import requests
-import logging
 
-from config import (abonent_id, callsign, chat_id, beacon_chat_id, my_id, token,
-                    owm_api_key, log_level)
+from utils import get_weather, get_speed
+
+from config import (abonent_id, beacon_chat_id, callsign, chat_id,
+                    hfpager_path, log_level, msg_end, my_id, system, token)
 
 
 logging.basicConfig(
     filename='bot.log',
     level=log_level,
-    format='%(asctime)s [%(levelname)s] %(message)s',
-)
+    format='%(asctime)s [%(levelname)s] %(message)s')
 
 
 message_dict = {}
 bot_recieve_dict = {}
-
-
-def date_time_now():
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    return now
+mailbox = {}
 
 
 def bot_polling():
     logging.info('Bot polling is running')
     while True:
         try:
-            bot.polling(interval=5)
             logging.debug('Bot polling')
+            bot.polling(interval=5)
         except Exception as ex:
             logging.error(f'Bot polling error: {ex}')
             logging.debug(f'Error: {ex}', exc_info=True)
 
 
 def hfpager_restart():
-    logging.info('HFpager restart thread started')
-    while True:
-        try:
-            subprocess.Popen(
-                'am start --user 0 '
-                '-n ru.radial.nogg.hfpager/'
-                'ru.radial.full.hfpager.MainActivity '
-                '-a "android.intent.action.SEND" '
-                '--es "android.intent.extra.TEXT" "notext" '
-                '-t "text/plain" '
-                '--ei "android.intent.extra.INDEX" "99999"',
-                stdout=subprocess.PIPE, shell=True)
-            time.sleep(300)
-        except Exception as ex:
-            logging.error(f'HFpager restart thread: {ex}')
-            logging.debug(f'Error: {ex}', exc_info=True)
-        finally:
-            time.sleep(300)
+    if system == 'ANDROID':
+        logging.info('HFpager restart thread started')
+        while True:
+            try:
+                subprocess.Popen(
+                    'am start --user 0 '
+                    '-n ru.radial.nogg.hfpager/'
+                    'ru.radial.full.hfpager.MainActivity '
+                    '-a "android.intent.action.SEND" '
+                    '--es "android.intent.extra.TEXT" "notext" '
+                    '-t "text/plain" '
+                    '--ei "android.intent.extra.INDEX" "99999"',
+                    stdout=subprocess.PIPE, shell=True)
+                # time.sleep(300)
+            except Exception as ex:
+                logging.error(f'HFpager restart thread: {ex}')
+                logging.debug(f'Error: {ex}', exc_info=True)
+            finally:
+                time.sleep(300)
 
 
 def hfpager_bot():
+    if system == 'ANDROID':
+        pager_dir = ('/data/data/com.termux/files/home/storage/shared/'
+                     'Documents/HFpager/')
+    elif system == 'LINUX':
+        pager_dir = hfpager_path + 'files/HFpager/'
+    else:
+        pager_dir = './'
     while True:
         try:
-            subprocess.Popen(
-                'am start --user 0 '
-                '-n ru.radial.nogg.hfpager/'
-                'ru.radial.full.hfpager.MainActivity ',
-                stdout=subprocess.PIPE, shell=True)
-            logging.info('HFpager started')
+            start_hfpager()
             logging.info('HFpager message parsing is running')
-            pager_dir = ('/data/data/com.termux/files/home/storage/shared/'
-                         'Documents/HFpager/')
             start_file_list = []
             for root, dirs, files in os.walk(pager_dir):
                 for file in files:
@@ -107,6 +104,20 @@ def hfpager_bot():
             time.sleep(2)
 
 
+def start_hfpager():
+    if system == 'ANDROID':
+        subprocess.Popen(
+            'am start --user 0 '
+            '-n ru.radial.nogg.hfpager/'
+            'ru.radial.full.hfpager.MainActivity ',
+            stdout=subprocess.PIPE, shell=True)
+    elif system == 'LINUX':
+        subprocess.Popen(
+            f'cd {hfpager_path}; ./start.sh',
+            stdout=subprocess.PIPE, shell=True)
+    logging.info('HFpager started')
+
+
 def send_edit_msg(key, message):
     text = message.split('\n', maxsplit=1)[-1].strip()
     if text in bot_recieve_dict:
@@ -127,6 +138,24 @@ def send_edit_msg(key, message):
 
 def parse_file(dir_filename, text):
     dirname, filename = dir_filename.split('/')
+    logging.info(dir_filename)
+    #
+    # F1+F2 RO RE принято OK или ERROR
+    # F1+F2 S1-S5 - отправлено сколько раз
+    # F3 0 2 3 Flags: ACK REPEAT (0=!ACK+!REPEAT, 2=ACK+!REPEAT, 3=ACK+REPEAT)
+    # F3+F4 2P/3P=ACK 2N/3N=NACK 20/30=ACK запрошен, но не получен
+    #
+    pattern = (r'(?P<DT_DATE>[\d-]{10})\.(?P<MSG_TYPE>[\D]{3})/'
+               r'(?P<DT_TIME>[\d]{6})-(?P<F1>[\D])(?P<F2>[\D])-'
+               r'(?P<F3>[\d]{0,1})(?P<F4>[\d])-(?P<MSG_NUM>[\d]{3})-'
+               r'(?P<MSG_LEN>[0-9A-F]{2})-'
+               r'(?P<HEAD_CRC>[0-9A-F]{4})-(?P<MSG_CRC>[0-9A-F]{4})-'
+               r'(?P<ID_FROM>[\d]{1,5}|~)_(?P<ID_TO>[\d]{1,5}|~)\.TXT')
+    match_object = re.search(pattern, dir_filename)
+    if match_object:
+        msg_meta = match_object.groupdict()
+        logging.info(pformat(msg_meta))
+
     date = dirname.split('.')[0]
     time = filename.split('-')[0]
     key = f'{date} {time}'
@@ -168,139 +197,85 @@ def parse_file(dir_filename, text):
                          disable_notification=True)
 
 
-def detect_request(text):
-    mesg_from = 0
-    mesg_to = 0
-    parse_message = text.split('\n', maxsplit=1)[-1]
+def detect_request(msg_full):
+    msg_meta = {}
+    msg_meta["FROM"], msg_meta["TO"] = 0, 0
+    msg_text = msg_full.split('\n', maxsplit=1)[-1]
     # получаем id адресатов
-    match = re.search(r'^(\d{1,5}) \(\d+\) > (\d+).*', text)
+    match = re.match(r'(?P<FROM>\d{1,5}) \(\d{3}\) > '
+                     r'(?P<TO>[0-9]{1,5}), '
+                     r'(?P<SPEED>\d{1,2}\.{0,1}\d{0,1}) Bd',
+                     msg_full)
     if match:
-        mesg_from = match[1]
-        mesg_to = match[2]
-    # парсим =x{lat},{lon}: map_link -> web
-    match = re.search(r'.*[xX](-{0,1}\d{1,2}\.\d{1,6}),(-{0,1}\d{1,3}\.\d{1,6}).*',
-                      parse_message)
+        msg_meta = match.groupdict()
+        logging.info(pformat(msg_meta))
+        msg_meta['SPEED'] = get_speed(msg_meta['SPEED'])
+        # logging.info(pformat(msg_meta))
+    # парсим {lat},{lon}: map_link -> web
+    match = re.search(r'(?P<LAT>-{0,1}\d{1,2}\.\d{1,8}),'
+                      r'(?P<LON>-{0,1}\d{1,3}\.\d{1,8})',
+                      msg_text)
     if match:
-        mlat = match[1]
-        mlon = match[2]
+        msg_geo = match.groupdict()
         message = ('https://www.openstreetmap.org/?'
-                   f'mlat={mlat}&mlon={mlon}&zoom=12')
+                   f'mlat={msg_geo["LAT"]}&mlon={msg_geo["LON"]}&zoom=12')
         logging.info(f'HFpager -> MapLink: {message}')
         bot.send_message(chat_id=chat_id, text=message)
-    # парсим =w{lat},{lon}: weather -> hf
-    match = re.search(r'^=[xX](-{0,1}\d{1,2}\.\d{1,6}),(-{0,1}\d{1,3}\.\d{1,6}).*',
-                      parse_message)
-    if match and mesg_to == str(my_id):
-        mlat = match[1]
-        mlon = match[2]
-        logging.info(f'HFpager -> Weather: {mlat} {mlon}')
-        bot.send_message(chat_id=chat_id,
-                         text=(f'{my_id}>{mesg_from} '
-                               f'weather in: {mlat} {mlon}'))
-        weather = get_weather(mlat, mlon)
-        split = smart_split(weather, 250)
-        for part in split:
-            pager_transmit(part, mesg_from, 1)
-
-
-def get_weather(lat, lon):
-    url = ('http://api.openweathermap.org/data/2.5/onecall?'
-           f'lat={lat}&lon={lon}&exclude=minutely,hourly&appid={owm_api_key}'
-           '&lang=ru&units=metric')
-    resp = requests.get(url)
-    data = resp.json()
-    weather = ''
-    if 'cod' in data:
-        error = data['message']
-        logging.error(f'HFpager get weather error: {error}')
-        return 'Error in weather'
-    else:
-        for day in data['daily'][:3]:
-            date = datetime.fromtimestamp(day['dt']).strftime('%m/%d')
-            temp_min = day['temp']['min']
-            temp_max = day['temp']['max']
-            clouds = day['clouds']
-            pop = day['pop']*100
-            wind_speed = day['wind_speed']
-            wind_gust = day['wind_gust']
-            weather_cond = day['weather'][0]['description']
-            wind_direct = get_wind_direction(day['wind_deg'])
-            weather += (f'{date} '
-                        f'Темп:{temp_min:.0f}…{temp_max:.0f}°C '
-                        f'Вет:{wind_direct} {wind_speed:.0f}…'
-                        f'{wind_gust:.0f}м/с {weather_cond} '
-                        f'Обл:{clouds}% Вер.ос:{pop:.0f}% ')
-            if 'rain' in day:
-                rain = day['rain']
-                weather += f'Дождь:{rain:.1f}мм '
-            if 'snow' in day:
-                rain = day['snow']
-                weather += f'Снег:{rain:.1f}мм '
-            weather += '\n'
-        return weather
-
-
-def get_wind_direction(deg):
-    wind = ''
-    direction = ['С ', 'СВ', 'В', 'ЮВ', 'Ю', 'ЮЗ', 'З', 'СЗ']
-    for i in range(0, 8):
-        step = 45.
-        min = i*step - 45/2.
-        max = i*step + 45/2.
-        if i == 0 and deg > 360-45/2.:
-            deg = deg - 360
-        if deg >= min and deg <= max:
-            wind = direction[i]
-            break
-    return wind
-
-
-def parse_for_pager(message, abonent_id):
-    # > обрезаем заранее
-    # сообщение >[id][text] -> [id]
-    match = re.match(r'^(\d{1,5})(\D.+)', message)
+    # парсим =x{lat},{lon}: weather -> hf
+    match = re.match(r'=[xX](?P<LAT>-{0,1}\d{1,2}\.\d{1,8}),'
+                     r'(?P<LON>-{0,1}\d{1,3}\.\d{1,8})',
+                     msg_text)
     if match:
-        abonent_id = match.group(1)
-        message = match.group(2)
+        msg_geo = match.groupdict()
+        if int(msg_meta["TO"]) == my_id:
+            logging.info(f'HFpager -> Weather: {msg_geo["LAT"]} '
+                         f'{msg_geo["LON"]}')
+            bot.send_message(chat_id=chat_id,
+                             text=(f'{my_id}>{msg_meta["FROM"]} '
+                                   f'weather in {msg_geo["LAT"]},'
+                                   f'{msg_geo["LON"]}'))
+            weather = get_weather(msg_geo["LAT"], msg_geo["LON"]) + msg_end
+            split = smart_split(weather, 250)
+            for part in split:
+                pager_transmit(part, msg_meta["FROM"], msg_meta['SPEED'], 0)
 
-    # сообщение начинается с ! -> бит повтора 1
-    match = re.match(r'^!(.+)', message)
-    if match:
-        repeat = 1
-        message = match.group(1)
-    else:
-        repeat = 0
+    match = re.match(r'=[gGtT]', msg_text)
+    if match and msg_meta['TO'] == str(my_id):
+        if msg_meta['FROM'] in mailbox.keys():
+            logging.info(f'{msg_meta["FROM"]} request from mailbox')
+            pager_transmit(mailbox[msg_meta['FROM']] + msg_end,
+                           msg_meta["FROM"], msg_meta['SPEED'], 0)
+        else:
+            logging.info(f'No msg to {msg_meta["FROM"]} in mailbox')
+            pager_transmit('No msg', msg_meta["FROM"], msg_meta['SPEED'], 0)
 
-    pager_transmit(message, abonent_id, repeat)
 
-
-def pager_transmit(message, abonent_id, repeat):
+def pager_transmit(message, abonent_id, speed, resend):
     short_text = shorten(message, width=35, placeholder="...")
-    logging.info(f'HFpager send to ID:{abonent_id} repeat:{repeat} '
+    logging.info(f'HFpager send to ID:{abonent_id} repeat:{resend} '
                  f'message: {short_text}')
-    subprocess.Popen(
-        'am start --user 0 '
-        '-n ru.radial.nogg.hfpager/ru.radial.full.hfpager.MainActivity '
-        '-a "android.intent.action.SEND" '
-        f'--es "android.intent.extra.TEXT" "{message.strip()}" '
-        '-t "text/plain" '
-        f'--ei "android.intent.extra.INDEX" "{abonent_id}" '
-        f'--es "android.intent.extra.SUBJECT" "Flags:1,{repeat}"',
-        stdout=subprocess.PIPE, shell=True)
-    # out = proc.stdout.read()
-    # return out
-
-
-def power_status():
-    try:
-        battery = json.loads(
-            subprocess.run(['termux-battery-status'],
-                           stdout=subprocess.PIPE).stdout.decode('utf-8'))
-        b_status = battery['status']
-    except Exception as ex:
-        logging.error(f'HFpager battery-status error: {ex}')
-        b_status = 'UNKNOWN'
-    return b_status
+    if system == 'ANDROID':
+        subprocess.Popen(
+            'am start --user 0 '
+            '-n ru.radial.nogg.hfpager/ru.radial.full.hfpager.MainActivity '
+            '-a "android.intent.action.SEND" '
+            f'--es "android.intent.extra.TEXT" "{message.strip()}" '
+            '-t "text/plain" '
+            f'--ei "android.intent.extra.INDEX" "{abonent_id}" '
+            f'--es "android.intent.extra.SUBJECT" "Flags:1,{resend}"',
+            stdout=subprocess.PIPE, shell=True)
+    elif system == 'LINUX':
+        ackreq = 1
+        msg_shablon = (f'to={abonent_id},speed={speed},'
+                       f'askreq={ackreq},resend={resend}\n'
+                       f'{message.strip()}')
+        logging.info(msg_shablon)
+        with open(hfpager_path + 'files/to_send/new.ms', 'w',
+                  encoding='cp1251') as f:
+            f.write(msg_shablon)
+        os.rename(hfpager_path + 'files/to_send/new.ms',
+                  hfpager_path + 'files/to_send/new.msg')
+        time.sleep(1)
 
 
 bot = telebot.TeleBot(token)
@@ -341,27 +316,38 @@ def send_bat_status(message):
 
 
 @bot.message_handler(func=lambda message: True)
-def echo_message(message):
-    # обрабатываем начинающиеся с >
+def input_message(message):
+    # обрабатываем начинающиеся с > из чата chat_id
     if message.date > start_time and message.chat.id == chat_id:
-        reg = re.compile(f'^({my_id})*>([0-9]{{1,5}})*([\s\S]+)')
-        match = re.match(reg, message.text)
-        if match:
+        parse_bot_to_radio(message)
+
+
+def parse_bot_to_radio(message):
+    '''
+    парсим сообщения типа 123>321! текст
+    '''
+    reg = re.compile('^(?P<FROM>[0-9]{0,5})>(?P<TO>[0-9]{0,5})'
+                     '(?P<REPEAT>!{0,1})'
+                     '\\s*(?P<SPEED>([sS]=[0-9]{1,2}\\.{0,1}[0-9]{0,1}){0,1})'
+                     '(?P<TEXT>[\\s\\S]+)')
+    match = re.match(reg, message.text)
+    if match:
+        msg_meta = match.groupdict()
+        logging.info(pformat(msg_meta))
+        if msg_meta['FROM'] == '' or msg_meta['FROM'] == str(my_id):
+            msg_meta['TO'] = msg_meta['TO'] or str(abonent_id)
+            msg_meta['TEXT'] = msg_meta['TEXT'].strip()
+            msg_meta['REPEAT'] = 1 if msg_meta['REPEAT'] else 0
+            msg_meta['SPEED'] = get_speed(msg_meta['SPEED'].strip("sS="))
             short_text = shorten(message.text, width=35, placeholder="...")
             logging.info(f'Bot receive message: {short_text}')
-            if match.group(2):
-                text_parse = match.group(2) + match.group(3)
-            else:
-                text_parse = match.group(3)
-            parse_for_pager(text_parse, abonent_id)
+            pager_transmit(msg_meta['TEXT'] + msg_end, msg_meta['TO'],
+                           msg_meta['SPEED'], msg_meta['REPEAT'])
             message = bot.send_message(chat_id=chat_id,
                                        text=short_text)
-            key = match.group(3).strip()
-            key_match = re.match(r'^!(.+)', key)
-            if key_match:
-                key = key_match.group(1).strip()
-            bot_recieve_dict[key] = {
+            bot_recieve_dict[msg_meta['TEXT']] = {
                 'message_id': message.message_id}
+            mailbox[msg_meta['TO']] = msg_meta['TEXT']
 
 
 if __name__ == "__main__":
