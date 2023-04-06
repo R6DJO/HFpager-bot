@@ -9,3 +9,4 @@ log_level = 'DEBUG'
 system = 'LINUX' # ANDROID | LINUX
 hfpager_path = 'ГДЕ_ЛЕЖИТ_КВПЕЙДЖЕР'
 msg_end = 'ЧТО_ДОБАВЛЯЕМ_В_КОНЦЕ_СООБЩЕНИЯ'
+geo_delta = СМЕЩЕНИЕ_КООРДИНАТ

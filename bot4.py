@@ -15,7 +15,7 @@ from telebot.util import smart_split
 
 from utils import get_weather, get_speed
 
-from config import (abonent_id, beacon_chat_id, callsign, chat_id,
+from config import (abonent_id, beacon_chat_id, callsign, chat_id, geo_delta,
                     hfpager_path, log_level, msg_end, my_id, system, token)
 
 
@@ -217,6 +217,8 @@ def detect_request(msg_full):
                       msg_text)
     if match:
         msg_geo = match.groupdict()
+        msg_geo["LAT"] = round(float(msg_geo["LAT"]) + geo_delta, 4)
+        msg_geo["LON"] = round(float(msg_geo["LON"]) + geo_delta, 4)
         message = ('https://www.openstreetmap.org/?'
                    f'mlat={msg_geo["LAT"]}&mlon={msg_geo["LON"]}&zoom=12')
         logging.info(f'HFpager -> MapLink: {message}')
@@ -227,6 +229,8 @@ def detect_request(msg_full):
                      msg_text)
     if match:
         msg_geo = match.groupdict()
+        msg_geo["LAT"] = round(float(msg_geo["LAT"]) + geo_delta, 4)
+        msg_geo["LON"] = round(float(msg_geo["LON"]) + geo_delta, 4)
         if int(msg_meta["TO"]) == my_id:
             logging.info(f'HFpager -> Weather: {msg_geo["LAT"]} '
                          f'{msg_geo["LON"]}')
@@ -336,12 +340,12 @@ def parse_bot_to_radio(message):
         logging.info(pformat(msg_meta))
         if msg_meta['FROM'] == '' or msg_meta['FROM'] == str(my_id):
             msg_meta['TO'] = msg_meta['TO'] or str(abonent_id)
-            msg_meta['TEXT'] = msg_meta['TEXT'].strip()
+            msg_meta['TEXT'] = msg_meta['TEXT'].strip() + msg_end
             msg_meta['REPEAT'] = 1 if msg_meta['REPEAT'] else 0
             msg_meta['SPEED'] = get_speed(msg_meta['SPEED'].strip("sS="))
             short_text = shorten(message.text, width=35, placeholder="...")
             logging.info(f'Bot receive message: {short_text}')
-            pager_transmit(msg_meta['TEXT'] + msg_end, msg_meta['TO'],
+            pager_transmit(msg_meta['TEXT'], msg_meta['TO'],
                            msg_meta['SPEED'], msg_meta['REPEAT'])
             message = bot.send_message(chat_id=chat_id,
                                        text=short_text)
