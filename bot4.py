@@ -15,7 +15,7 @@ from telebot.util import smart_split
 
 from utils import get_weather, get_speed
 
-from config import (abonent_id, beacon_chat_id, callsign, chat_id,
+from config import (abonent_id, beacon_chat_id, callsign, chat_id, geo_delta,
                     hfpager_path, log_level, msg_end, my_id, system, token)
 
 
@@ -217,6 +217,8 @@ def detect_request(msg_full):
                       msg_text)
     if match:
         msg_geo = match.groupdict()
+        msg_geo["LAT"] = float(msg_geo["LAT"]) + geo_delta
+        msg_geo["LON"] = float(msg_geo["LON"]) + geo_delta
         message = ('https://www.openstreetmap.org/?'
                    f'mlat={msg_geo["LAT"]}&mlon={msg_geo["LON"]}&zoom=12')
         logging.info(f'HFpager -> MapLink: {message}')
@@ -227,6 +229,8 @@ def detect_request(msg_full):
                      msg_text)
     if match:
         msg_geo = match.groupdict()
+        msg_geo["LAT"] = float(msg_geo["LAT"]) + geo_delta
+        msg_geo["LON"] = float(msg_geo["LON"]) + geo_delta
         if int(msg_meta["TO"]) == my_id:
             logging.info(f'HFpager -> Weather: {msg_geo["LAT"]} '
                          f'{msg_geo["LON"]}')
