@@ -224,7 +224,7 @@ def detect_request(msg_full):
         logging.info(f'HFpager -> MapLink: {message}')
         bot.send_message(chat_id=chat_id, text=message)
     # парсим =x{lat},{lon}: weather -> hf
-    match = re.match(r'=[xX](?P<LAT>-{0,1}\d{1,2}\.\d{1,8}),'
+    match = re.match(r'=[wW](?P<LAT>-{0,1}\d{1,2}\.\d{1,8}),'
                      r'(?P<LON>-{0,1}\d{1,3}\.\d{1,8})',
                      msg_text)
     if match:
