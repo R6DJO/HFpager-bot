@@ -217,8 +217,8 @@ def detect_request(msg_full):
                       msg_text)
     if match:
         msg_geo = match.groupdict()
-        msg_geo["LAT"] = float(msg_geo["LAT"]) + geo_delta
-        msg_geo["LON"] = float(msg_geo["LON"]) + geo_delta
+        msg_geo["LAT"] = round(float(msg_geo["LAT"]) + geo_delta, 4)
+        msg_geo["LON"] = round(float(msg_geo["LON"]) + geo_delta, 4)
         message = ('https://www.openstreetmap.org/?'
                    f'mlat={msg_geo["LAT"]}&mlon={msg_geo["LON"]}&zoom=12')
         logging.info(f'HFpager -> MapLink: {message}')
@@ -229,8 +229,8 @@ def detect_request(msg_full):
                      msg_text)
     if match:
         msg_geo = match.groupdict()
-        msg_geo["LAT"] = float(msg_geo["LAT"]) + geo_delta
-        msg_geo["LON"] = float(msg_geo["LON"]) + geo_delta
+        msg_geo["LAT"] = round(float(msg_geo["LAT"]) + geo_delta, 4)
+        msg_geo["LON"] = round(float(msg_geo["LON"]) + geo_delta, 4)
         if int(msg_meta["TO"]) == my_id:
             logging.info(f'HFpager -> Weather: {msg_geo["LAT"]} '
                          f'{msg_geo["LON"]}')
