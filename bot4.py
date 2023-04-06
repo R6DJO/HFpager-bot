@@ -336,12 +336,12 @@ def parse_bot_to_radio(message):
         logging.info(pformat(msg_meta))
         if msg_meta['FROM'] == '' or msg_meta['FROM'] == str(my_id):
             msg_meta['TO'] = msg_meta['TO'] or str(abonent_id)
-            msg_meta['TEXT'] = msg_meta['TEXT'].strip()
+            msg_meta['TEXT'] = msg_meta['TEXT'].strip() + msg_end
             msg_meta['REPEAT'] = 1 if msg_meta['REPEAT'] else 0
             msg_meta['SPEED'] = get_speed(msg_meta['SPEED'].strip("sS="))
             short_text = shorten(message.text, width=35, placeholder="...")
             logging.info(f'Bot receive message: {short_text}')
-            pager_transmit(msg_meta['TEXT'] + msg_end, msg_meta['TO'],
+            pager_transmit(msg_meta['TEXT'], msg_meta['TO'],
                            msg_meta['SPEED'], msg_meta['REPEAT'])
             message = bot.send_message(chat_id=chat_id,
                                        text=short_text)
