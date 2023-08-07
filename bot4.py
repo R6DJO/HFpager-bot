@@ -220,7 +220,7 @@ def detect_request(msg_full):
         msg_geo = match.groupdict()
         msg_geo["LAT"] = round(float(msg_geo["LAT"]) + geo_delta, 4)
         msg_geo["LON"] = round(float(msg_geo["LON"]) + geo_delta, 4)
-        dt_string = datetime.now().strftime('%d-%b-%Y %H:%M')
+        dt_string = datetime.now().strftime('%d-%b-%Y%%20%H:%M')
         message = (f'https://nakarte.me/#m=13/{msg_geo["LAT"]}/{msg_geo["LON"]}&l=Otm/Wp&nktp={msg_geo["LAT"]}/{msg_geo["LON"]}/{dt_string}')
         logging.info(f'HFpager -> MapLink: {message}')
         bot.send_message(chat_id=chat_id, text=message)
