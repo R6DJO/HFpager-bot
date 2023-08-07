@@ -220,7 +220,7 @@ def detect_request(msg_full):
         msg_geo["LAT"] = round(float(msg_geo["LAT"]) + geo_delta, 4)
         msg_geo["LON"] = round(float(msg_geo["LON"]) + geo_delta, 4)
         message = ('https://www.openstreetmap.org/?'
-                   f'mlat={msg_geo["LAT"]}&mlon={msg_geo["LON"]}&zoom=12')
+                   f'mlat={msg_geo["LAT"]}&mlon={msg_geo["LON"]}&zoom=13&layers=Y')
         logging.info(f'HFpager -> MapLink: {message}')
         bot.send_message(chat_id=chat_id, text=message)
     # парсим =x{lat},{lon}: weather -> hf
