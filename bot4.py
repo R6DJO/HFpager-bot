@@ -7,6 +7,7 @@ from pprint import pformat
 import re
 import subprocess
 import time
+from datetime import datetime
 from textwrap import shorten
 from threading import Thread
 
@@ -219,8 +220,8 @@ def detect_request(msg_full):
         msg_geo = match.groupdict()
         msg_geo["LAT"] = round(float(msg_geo["LAT"]) + geo_delta, 4)
         msg_geo["LON"] = round(float(msg_geo["LON"]) + geo_delta, 4)
-        message = ('https://www.openstreetmap.org/?'
-                   f'mlat={msg_geo["LAT"]}&mlon={msg_geo["LON"]}&zoom=13&layers=Y')
+        dt_string = datetime.now().strftime('%d-%b-%Y %H:%M')
+        message = (f'https://nakarte.me/#m=13/{msg_geo["LAT"]}/{msg_geo["LON"]}&l=Otm/Wp&nktp={msg_geo["LAT"]}/{msg_geo["LON"]}/{dt_string}')
         logging.info(f'HFpager -> MapLink: {message}')
         bot.send_message(chat_id=chat_id, text=message)
     # парсим =x{lat},{lon}: weather -> hf
