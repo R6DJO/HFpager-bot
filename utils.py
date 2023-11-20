@@ -4,10 +4,10 @@ from datetime import datetime
 import requests
 
 
-from config import OWM_API_KEY
+# from config import OWM_API_KEY
 
 
-def get_weather(lat, lon):
+def get_weather(OWM_API_KEY, lat, lon):
     """Function get weater from OWM servers."""
     url = ('http://api.openweathermap.org/data/2.5/onecall?'
            f'lat={lat}&lon={lon}&exclude=minutely,hourly&appid={OWM_API_KEY}'

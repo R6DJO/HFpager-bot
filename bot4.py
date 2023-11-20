@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 '''Telegram bot for HFpager'''
 
+import configparser
 import json
 import logging
 import os
@@ -12,15 +13,36 @@ from datetime import datetime
 from textwrap import shorten
 from threading import Thread
 
-# import telebot
-from telebot import TeleBot
+import telebot
+# from telebot import ExceptionHandler, TeleBot
 from telebot.util import smart_split
 
 from utils import get_weather, get_speed
 
-from config import (ABONENT_ID, BEACON_CHAT_ID, CALLSIGN, CHAT_ID, GEO_DELTA,
-                    HFPAGER_PATH, LOG_LEVEL, MSG_END, MY_ID, SYSTEM, TOKEN)
+config = configparser.ConfigParser(
+    allow_no_value=True, default_section=False, inline_comment_prefixes=('#', ';'))
+try:
+    config.read('config.ini')
+except configparser.MissingSectionHeaderError:
+    with open('config.ini', encoding='UTF-8') as stream:
+        config.read_string('[bot]\n' + stream.read())
 
+MY_ID = config.getint('bot', 'my_id')
+ABONENT_ID = config.getint('bot', 'abonent_id')
+
+CALLSIGN = config.get('bot', 'callsign')
+MSG_END = ' ' + config.get('bot', 'msg_end')
+
+CHAT_ID = config.getint('bot', 'chat_id')
+BEACON_CHAT_ID = config.getint('bot', 'beacon_chat_id')
+OWNER_CHAT_ID = config.getint('bot', 'owner_chat_id')
+
+SYSTEM = config.get('bot', 'system')
+HFPAGER_PATH = config.get('bot', 'hfpager_path')
+LOG_LEVEL = config.get('bot', 'log_level')
+TOKEN = config.get('bot', 'token')
+OWM_API_KEY = config.get('bot', 'owm_api_key')
+GEO_DELTA = config.getfloat('bot', 'geo_delta')
 
 logging.basicConfig(
     filename='bot.log',
@@ -47,27 +69,26 @@ def bot_polling():
 
 def hfpager_restart():
     """Function periodicaly restart HFpager.app on Android."""
-    if SYSTEM == 'ANDROID':
-        logging.info('HFpager restart thread started')
-        while True:
-            try:
-                subprocess.run(
-                    'am start --user 0 '
-                    '-n ru.radial.nogg.hfpager/'
-                    'ru.radial.full.hfpager.MainActivity '
-                    '-a "android.intent.action.SEND" '
-                    '--es "android.intent.extra.TEXT" "notext" '
-                    '-t "text/plain" '
-                    '--ei "android.intent.extra.INDEX" "99999"',
-                    stdout=subprocess.PIPE, shell=True, check=False,
-                    timeout=10)
+    logging.info('HFpager restart thread started')
+    while True:
+        try:
+            subprocess.run(
+                'am start --user 0 '
+                '-n ru.radial.nogg.hfpager/'
+                'ru.radial.full.hfpager.MainActivity '
+                '-a "android.intent.action.SEND" '
+                '--es "android.intent.extra.TEXT" "notext" '
+                '-t "text/plain" '
+                '--ei "android.intent.extra.INDEX" "99999"',
+                stdout=subprocess.PIPE, shell=True, check=False,
+                timeout=10)
 
-                # sleep(300)
-            except subprocess.SubprocessError as ex:
-                logging.error('HFpager restart thread: %s', ex)
-                logging.debug('Error: %s', ex, exc_info=True)
-            finally:
-                sleep(300)
+            # sleep(300)
+        except subprocess.SubprocessError as ex:
+            logging.error('HFpager restart thread: %s', ex)
+            logging.debug('Error: %s', ex, exc_info=True)
+        finally:
+            sleep(300)
 
 
 def hfpager_bot():
@@ -252,7 +273,8 @@ def detect_request(msg_full):
                              text=(f'{MY_ID}>{msg_meta["FROM"]} '
                                    f'weather in {msg_geo["LAT"]},'
                                    f'{msg_geo["LON"]}'))
-            weather = get_weather(msg_geo["LAT"], msg_geo["LON"]) + MSG_END
+            weather = get_weather(
+                OWM_API_KEY, msg_geo["LAT"], msg_geo["LON"]) + MSG_END
             split = smart_split(weather, 250)
             for part in split:
                 pager_transmit(part, msg_meta["FROM"], msg_meta['SPEED'], 0)
@@ -297,7 +319,7 @@ def pager_transmit(message, abonent_id, speed, resend):
         sleep(1)
 
 
-bot = TeleBot(TOKEN)
+bot = telebot.TeleBot(TOKEN)
 
 
 @bot.message_handler(commands=['help', 'start'])
@@ -376,10 +398,13 @@ start_time = int(time())
 if __name__ == "__main__":
     to_radio = Thread(target=bot_polling)
     to_web = Thread(target=hfpager_bot)
-    antisleep = Thread(target=hfpager_restart)
+    if SYSTEM == 'ANDROID':
+        antisleep = Thread(target=hfpager_restart)
     to_radio.start()
     to_web.start()
-    antisleep.start()
+    if SYSTEM == 'ANDROID':
+        antisleep.start()
     to_radio.join()
     to_web.join()
-    antisleep.join()
+    if SYSTEM == 'ANDROID':
+        antisleep.join()
