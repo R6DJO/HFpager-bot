@@ -38,6 +38,7 @@ BEACON_CHAT_ID = config.getint('bot', 'beacon_chat_id')
 OWNER_CHAT_ID = config.getint('bot', 'owner_chat_id')
 
 SYSTEM = config.get('bot', 'system')
+RUN_PAGER = config.getboolean('bot', 'run_pager')
 HFPAGER_PATH = config.get('bot', 'hfpager_path')
 LOG_LEVEL = config.get('bot', 'log_level')
 TOKEN = config.get('bot', 'token')
@@ -97,7 +98,7 @@ def hfpager_bot():
         pager_dir = ('/data/data/com.termux/files/home/storage/shared/'
                      'Documents/HFpager/')
     elif SYSTEM == 'LINUX':
-        pager_dir = HFPAGER_PATH + 'files/HFpager/'
+        pager_dir = HFPAGER_PATH + 'data/MESSAGES.DIR/'
     else:
         pager_dir = './'
     while True:
@@ -142,9 +143,9 @@ def start_hfpager():
             'ru.radial.full.hfpager.MainActivity ',
             stdout=subprocess.PIPE, shell=True, check=False,
             timeout=10)
-    elif SYSTEM == 'LINUX':
+    elif SYSTEM == 'LINUX' and RUN_PAGER is True:
         subprocess.run(
-            f'cd {HFPAGER_PATH}; ./start.sh; exit', shell=True, check=False,
+            f'cd {HFPAGER_PATH}/bin/; ./start.sh; exit', shell=True, check=False,
             timeout=10)
     logging.info('HFpager started')
 
@@ -311,11 +312,11 @@ def pager_transmit(message, abonent_id, speed, resend):
                        f'askreq={ackreq},resend={resend}\n'
                        f'{message.strip()}')
         logging.info(msg_shablon)
-        with open(HFPAGER_PATH + 'files/to_send/new.ms', 'w',
+        with open(HFPAGER_PATH + 'data/to_send/new.ms', 'w',
                   encoding='cp1251') as f:
             f.write(msg_shablon)
-        os.rename(HFPAGER_PATH + 'files/to_send/new.ms',
-                  HFPAGER_PATH + 'files/to_send/new.msg')
+        os.rename(HFPAGER_PATH + 'data/to_send/new.ms',
+                  HFPAGER_PATH + 'data/to_send/new.msg')
         sleep(1)
 
 
