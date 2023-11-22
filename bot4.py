@@ -8,7 +8,7 @@ import os
 from pprint import pformat
 import re
 import subprocess
-from sys import exit
+from sys import exit as sysexit
 from time import sleep, time
 from datetime import datetime
 from textwrap import shorten
@@ -36,7 +36,8 @@ try:
     MY_ID = config.getint('hfpager', 'my_id')
     ABONENT_ID = config.getint('hfpager', 'abonent_id', fallback=999)
     CALLSIGN = config.get('hfpager', 'callsign')
-    MSG_END = ' ' + config.get('hfpager', 'msg_end')
+    MSG_END = config.get('hfpager', 'msg_end', fallback='')
+    MSG_END = ' ' + MSG_END if MSG_END != '' else ''
     GEO_DELTA = config.getfloat('hfpager', 'geo_delta', fallback=0.0)
 
     TOKEN = config.get('telegram', 'token')
@@ -46,17 +47,15 @@ try:
     OWNER_CHAT_ID = config.getint(
         'telegram', 'owner_chat_id', fallback=CHAT_ID)
 
-    OS_TYPE = config.get('system', 'system')
+    OS_TYPE = config.get('system', 'os_type')
     RUN_PAGER = config.getboolean('system', 'run_pager', fallback=False)
     HFPAGER_PATH = config.get('system', 'hfpager_path')
     LOG_LEVEL = config.get('system', 'log_level', fallback='WARNING')
-    OWM_API_KEY = config.get('system', 'owm_api_key', fallback='NO_OWM_API_TOKEN')
+    OWM_API_KEY = config.get('system', 'owm_api_key',
+                             fallback='NO_OWM_API_TOKEN')
 except configparser.Error as e:
-    print(
-        f'ERROR: {e} in configfile {args.configfile} or file not exist.')
-    exit(1)
-
-print(RUN_PAGER)
+    print(f'ERROR: {e} in configfile {args.configfile} or file not exist.')
+    sysexit(1)
 
 logging.basicConfig(
     filename='bot.log',
