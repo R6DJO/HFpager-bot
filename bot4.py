@@ -50,7 +50,7 @@ try:
     RUN_PAGER = config.getboolean('system', 'run_pager', fallback=False)
     HFPAGER_PATH = config.get('system', 'hfpager_path')
     LOG_LEVEL = config.get('system', 'log_level', fallback='WARNING')
-    OWM_API_KEY = config.get('system', 'owm_api_key')
+    OWM_API_KEY = config.get('system', 'owm_api_key', fallback='NO_OWM_API_TOKEN')
 except configparser.Error as e:
     print(
         f'ERROR: {e} in configfile {args.configfile} or file not exist.')
@@ -288,8 +288,11 @@ def detect_request(msg_full):
                              text=(f'{MY_ID}>{msg_meta["FROM"]} '
                                    f'weather in {msg_geo["LAT"]},'
                                    f'{msg_geo["LON"]}'))
-            weather = get_weather(
-                OWM_API_KEY, msg_geo["LAT"], msg_geo["LON"]) + MSG_END
+            if OWM_API_KEY != 'NO_OWM_API_TOKEN':
+                weather = get_weather(
+                    OWM_API_KEY, msg_geo["LAT"], msg_geo["LON"]) + MSG_END
+            else:
+                weather = 'Sorry, no weather :('
             split = smart_split(weather, 250)
             for part in split:
                 pager_transmit(part, msg_meta["FROM"], msg_meta['SPEED'], 0)

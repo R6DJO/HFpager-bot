@@ -1,0 +1,20 @@
+[telegram]
+token = TELEGRAM BOT TOKEN
+chat_id = -0 ;MAIN CHAT ID
+;owner_chat_id = -0 ;OWNET CHAT ID
+;beacon_chat_id = -0 ;BEACON CHAT ID
+
+[system]
+log_level = INFO ;LOG LEVEL DEBUG/INFO...
+os_type = LINUX ;ANDROID/LINUX
+hfpager_path = /usr/local/hfpager/
+;run_pager = false
+;owm_api_key = TOKEN ;OWM API TOKEN
+
+[hfpager]
+callsign = CALLSIGN
+msg_end = de CALLSIGN
+my_id = 7373
+;abonent_id = 0 ;
+
+
