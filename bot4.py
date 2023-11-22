@@ -27,23 +27,23 @@ except configparser.MissingSectionHeaderError:
     with open('config.ini', encoding='UTF-8') as stream:
         config.read_string('[bot]\n' + stream.read())
 
-MY_ID = config.getint('bot', 'my_id')
-ABONENT_ID = config.getint('bot', 'abonent_id')
+MY_ID = config.getint('hfpager', 'my_id')
+ABONENT_ID = config.getint('hfpager', 'abonent_id')
+CALLSIGN = config.get('hfpager', 'callsign')
+MSG_END = ' ' + config.get('hfpager', 'msg_end')
+GEO_DELTA = config.getfloat('hfpager', 'geo_delta')
 
-CALLSIGN = config.get('bot', 'callsign')
-MSG_END = ' ' + config.get('bot', 'msg_end')
+TOKEN = config.get('telegram', 'token')
+CHAT_ID = config.getint('telegram', 'chat_id')
+BEACON_CHAT_ID = config.getint('telegram', 'beacon_chat_id')
+OWNER_CHAT_ID = config.getint('telegram', 'owner_chat_id')
 
-CHAT_ID = config.getint('bot', 'chat_id')
-BEACON_CHAT_ID = config.getint('bot', 'beacon_chat_id')
-OWNER_CHAT_ID = config.getint('bot', 'owner_chat_id')
+SYSTEM = config.get('system', 'system')
+RUN_PAGER = config.getboolean('system', 'run_pager')
+HFPAGER_PATH = config.get('system', 'hfpager_path')
+LOG_LEVEL = config.get('system', 'log_level')
+OWM_API_KEY = config.get('system', 'owm_api_key')
 
-SYSTEM = config.get('bot', 'system')
-RUN_PAGER = config.getboolean('bot', 'run_pager')
-HFPAGER_PATH = config.get('bot', 'hfpager_path')
-LOG_LEVEL = config.get('bot', 'log_level')
-TOKEN = config.get('bot', 'token')
-OWM_API_KEY = config.get('bot', 'owm_api_key')
-GEO_DELTA = config.getfloat('bot', 'geo_delta')
 
 logging.basicConfig(
     filename='bot.log',
