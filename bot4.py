@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 '''Telegram bot for HFpager'''
-
+import argparse
 import configparser
 import json
 import logging
@@ -8,6 +8,7 @@ import os
 from pprint import pformat
 import re
 import subprocess
+from sys import exit
 from time import sleep, time
 from datetime import datetime
 from textwrap import shorten
@@ -19,31 +20,43 @@ from telebot.util import smart_split
 
 from utils import get_weather, get_speed
 
-config = configparser.ConfigParser(
-    allow_no_value=True, default_section=False, inline_comment_prefixes=('#', ';'))
+parser = argparse.ArgumentParser(
+    description='Telegram bot for HFpager/gate (see dxsoft.com).')
+parser.add_argument('-c', '--conf', dest="configfile",
+                    type=str, required=True, default=None)
+args = parser.parse_args()
+
+# config = configparser.ConfigParser(
+#     allow_no_value=True, default_section=False, inline_comment_prefixes=('#', ';'))
+
 try:
-    config.read('config.ini')
-except configparser.MissingSectionHeaderError:
-    with open('config.ini', encoding='UTF-8') as stream:
-        config.read_string('[bot]\n' + stream.read())
+    config = configparser.ConfigParser(inline_comment_prefixes=('#', ';'))
+    config.read(args.configfile)
 
-MY_ID = config.getint('hfpager', 'my_id')
-ABONENT_ID = config.getint('hfpager', 'abonent_id')
-CALLSIGN = config.get('hfpager', 'callsign')
-MSG_END = ' ' + config.get('hfpager', 'msg_end')
-GEO_DELTA = config.getfloat('hfpager', 'geo_delta')
+    MY_ID = config.getint('hfpager', 'my_id')
+    ABONENT_ID = config.getint('hfpager', 'abonent_id', fallback=999)
+    CALLSIGN = config.get('hfpager', 'callsign')
+    MSG_END = ' ' + config.get('hfpager', 'msg_end')
+    GEO_DELTA = config.getfloat('hfpager', 'geo_delta', fallback=0.0)
 
-TOKEN = config.get('telegram', 'token')
-CHAT_ID = config.getint('telegram', 'chat_id')
-BEACON_CHAT_ID = config.getint('telegram', 'beacon_chat_id')
-OWNER_CHAT_ID = config.getint('telegram', 'owner_chat_id')
+    TOKEN = config.get('telegram', 'token')
+    CHAT_ID = config.getint('telegram', 'chat_id')
+    BEACON_CHAT_ID = config.getint(
+        'telegram', 'beacon_chat_id', fallback=CHAT_ID)
+    OWNER_CHAT_ID = config.getint(
+        'telegram', 'owner_chat_id', fallback=CHAT_ID)
 
-SYSTEM = config.get('system', 'system')
-RUN_PAGER = config.getboolean('system', 'run_pager')
-HFPAGER_PATH = config.get('system', 'hfpager_path')
-LOG_LEVEL = config.get('system', 'log_level')
-OWM_API_KEY = config.get('system', 'owm_api_key')
+    OS_TYPE = config.get('system', 'system')
+    RUN_PAGER = config.getboolean('system', 'run_pager', fallback=False)
+    HFPAGER_PATH = config.get('system', 'hfpager_path')
+    LOG_LEVEL = config.get('system', 'log_level', fallback='WARNING')
+    OWM_API_KEY = config.get('system', 'owm_api_key')
+except configparser.Error as e:
+    print(
+        f'ERROR: {e} in configfile {args.configfile} or file not exist.')
+    exit(1)
 
+print(RUN_PAGER)
 
 logging.basicConfig(
     filename='bot.log',
@@ -94,10 +107,10 @@ def hfpager_restart():
 
 def hfpager_bot():
     """Function for check new msg file on FS."""
-    if SYSTEM == 'ANDROID':
+    if OS_TYPE == 'ANDROID':
         pager_dir = ('/data/data/com.termux/files/home/storage/shared/'
                      'Documents/HFpager/')
-    elif SYSTEM == 'LINUX':
+    elif OS_TYPE == 'LINUX':
         pager_dir = HFPAGER_PATH + 'data/MESSAGES.DIR/'
     else:
         pager_dir = './'
@@ -136,18 +149,19 @@ def hfpager_bot():
 
 def start_hfpager():
     """Function start HFpager app."""
-    if SYSTEM == 'ANDROID':
+    if OS_TYPE == 'ANDROID':
         subprocess.run(
             'am start --user 0 '
             '-n ru.radial.nogg.hfpager/'
             'ru.radial.full.hfpager.MainActivity ',
             stdout=subprocess.PIPE, shell=True, check=False,
             timeout=10)
-    elif SYSTEM == 'LINUX' and RUN_PAGER is True:
+        logging.info('HFpager started')
+    elif OS_TYPE == 'LINUX' and RUN_PAGER is True:
         subprocess.run(
             f'cd {HFPAGER_PATH}/bin/; ./start.sh; exit', shell=True, check=False,
             timeout=10)
-    logging.info('HFpager started')
+        logging.info('HFpager started')
 
 
 def send_edit_msg(key, message):
@@ -296,7 +310,7 @@ def pager_transmit(message, abonent_id, speed, resend):
     short_text = shorten(message, width=35, placeholder="...")
     logging.info('HFpager send to ID:%s repeat:%s '
                  'message: %s', abonent_id, resend, short_text)
-    if SYSTEM == 'ANDROID':
+    if OS_TYPE == 'ANDROID':
         subprocess.run(
             'am start --user 0 '
             '-n ru.radial.nogg.hfpager/ru.radial.full.hfpager.MainActivity '
@@ -306,7 +320,7 @@ def pager_transmit(message, abonent_id, speed, resend):
             f'--ei "android.intent.extra.INDEX" "{abonent_id}" '
             f'--es "android.intent.extra.SUBJECT" "Flags:1,{resend}"',
             stdout=subprocess.PIPE, shell=True, check=False, timeout=10)
-    elif SYSTEM == 'LINUX':
+    elif OS_TYPE == 'LINUX':
         ackreq = 1
         msg_shablon = (f'to={abonent_id},speed={speed},'
                        f'askreq={ackreq},resend={resend}\n'
@@ -397,15 +411,16 @@ def parse_bot_to_radio(message):
 start_time = int(time())
 
 if __name__ == "__main__":
+    print('Bot starting...')
     to_radio = Thread(target=bot_polling)
     to_web = Thread(target=hfpager_bot)
-    if SYSTEM == 'ANDROID':
+    if OS_TYPE == 'ANDROID':
         antisleep = Thread(target=hfpager_restart)
     to_radio.start()
     to_web.start()
-    if SYSTEM == 'ANDROID':
+    if OS_TYPE == 'ANDROID':
         antisleep.start()
     to_radio.join()
     to_web.join()
-    if SYSTEM == 'ANDROID':
+    if OS_TYPE == 'ANDROID':
         antisleep.join()
