@@ -185,7 +185,7 @@ def send_edit_msg(key, message):
 def parse_file(dir_filename, text):
     """Function parse file."""
     dirname, filename = dir_filename.split('/')
-    logging.info(dir_filename)
+    logging.debug(dir_filename)
     #
     # F1+F2 RO RE принято OK или ERROR
     # F1+F2 S1-S5 - отправлено сколько раз
@@ -201,7 +201,7 @@ def parse_file(dir_filename, text):
     match_object = re.search(pattern, dir_filename)
     if match_object:
         msg_meta = match_object.groupdict()
-        logging.info(pformat(msg_meta))
+        logging.debug(pformat(msg_meta))
 
     cur_date = dirname.split('.')[0]
     cur_time = filename.split('-')[0]
