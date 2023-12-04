@@ -6,6 +6,7 @@ import json
 import logging
 import os
 from pprint import pformat
+import random
 import re
 import subprocess
 from sys import exit as sysexit
@@ -15,7 +16,6 @@ from textwrap import shorten
 from threading import Thread
 
 import telebot
-# from telebot import ExceptionHandler, TeleBot
 from telebot.util import smart_split
 
 from utils import get_weather, get_speed
@@ -25,9 +25,6 @@ parser = argparse.ArgumentParser(
 parser.add_argument('-c', '--conf', dest="configfile",
                     type=str, required=True, default=None)
 args = parser.parse_args()
-
-# config = configparser.ConfigParser(
-#     allow_no_value=True, default_section=False, inline_comment_prefixes=('#', ';'))
 
 try:
     config = configparser.ConfigParser(inline_comment_prefixes=('#', ';'))
@@ -49,6 +46,7 @@ try:
 
     OS_TYPE = config.get('system', 'os_type')
     RUN_PAGER = config.getboolean('system', 'run_pager', fallback=False)
+    HFPGATE = config.getboolean('system', 'hfpgate', fallback=False)
     HFPAGER_PATH = config.get('system', 'hfpager_path')
     LOG_LEVEL = config.get('system', 'log_level', fallback='WARNING')
     OWM_API_KEY = config.get('system', 'owm_api_key',
@@ -83,6 +81,7 @@ def bot_polling():
 def hfpager_restart():
     """Function periodicaly restart HFpager.app on Android."""
     logging.info('HFpager restart thread started')
+    start_hfpager()
     while True:
         try:
             subprocess.run(
@@ -115,7 +114,6 @@ def hfpager_bot():
         pager_dir = './'
     while True:
         try:
-            start_hfpager()
             logging.info('HFpager message parsing is running')
             start_file_list = []
             for root, _, files in os.walk(pager_dir):
@@ -129,18 +127,13 @@ def hfpager_bot():
                 delta = list(set(current_file_list) - set(start_file_list))
                 logging.debug('New files: %s', delta)
                 for file in delta:
-                    try:
-                        mesg = open(file, 'r', encoding='cp1251')
-                        text = mesg.read()
-                        parse_file(file.replace(pager_dir, ''), text)
-                    except IOError as ex:
-                        logging.error('HFpager read file error: %s', ex)
-                        logging.debug('Error: %s', ex, exc_info=True)
+                    mesg = open(file, 'r', encoding='cp1251')
+                    text = mesg.read()
+                    parse_file(file.replace(pager_dir, ''), text)
                 start_file_list = current_file_list.copy()
                 sleep(2)
-
         except Exception as ex:
-            logging.error('HFpager message parsing error: %s', ex)
+            logging.error('HFpager file parsing error: %s', ex)
             logging.debug('Error: %s', ex, exc_info=True)
         finally:
             sleep(2)
@@ -245,11 +238,11 @@ def parse_file(dir_filename, text):
 
 
 def detect_request(msg_full):
-    """Function detect request in msg."""
+    """Function detect request in radio msg."""
     msg_meta = {}
     msg_meta["FROM"], msg_meta["TO"] = 0, 0
     msg_text = msg_full.split('\n', maxsplit=1)[-1]
-    # получаем id адресатов
+    # получаем метаданные сообщения
     match = re.match(r'(?P<FROM>\d{1,5}) \(\d{3}\) > '
                      r'(?P<TO>[0-9]{1,5}), '
                      r'(?P<SPEED>\d{1,2}\.{0,1}\d{0,1}) Bd',
@@ -259,6 +252,7 @@ def detect_request(msg_full):
         logging.info(pformat(msg_meta))
         msg_meta['SPEED'] = get_speed(msg_meta['SPEED'])
         # logging.info(pformat(msg_meta))
+
     # парсим {lat},{lon}: map_link -> web
     match = re.search(r'(?P<LAT>-{0,1}\d{1,2}\.\d{1,8}),'
                       r'(?P<LON>-{0,1}\d{1,3}\.\d{1,8})',
@@ -272,39 +266,52 @@ def detect_request(msg_full):
                    f'&l=Otm/Wp&nktp={msg_geo["LAT"]}/{msg_geo["LON"]}/{dt_string}')
         logging.info('HFpager -> MapLink: %s', message)
         bot.send_message(chat_id=CHAT_ID, text=message)
-    # парсим =x{lat},{lon}: weather -> hf
-    match = re.match(r'=[xX](?P<LAT>-{0,1}\d{1,2}\.\d{1,8}),'
-                     r'(?P<LON>-{0,1}\d{1,3}\.\d{1,8})',
-                     msg_text)
-    if match:
-        msg_geo = match.groupdict()
-        msg_geo["LAT"] = round(float(msg_geo["LAT"]) + GEO_DELTA, 4)
-        msg_geo["LON"] = round(float(msg_geo["LON"]) + GEO_DELTA, 4)
-        if int(msg_meta["TO"]) == MY_ID:
-            logging.info('HFpager -> Weather: %s %s',
-                         msg_geo["LAT"], msg_geo["LON"])
-            bot.send_message(chat_id=CHAT_ID,
-                             text=(f'{MY_ID}>{msg_meta["FROM"]} '
-                                   f'weather in {msg_geo["LAT"]},'
-                                   f'{msg_geo["LON"]}'))
-            if OWM_API_KEY != 'NO_OWM_API_TOKEN':
-                weather = get_weather(
-                    OWM_API_KEY, msg_geo["LAT"], msg_geo["LON"]) + MSG_END
-            else:
-                weather = 'Sorry, no weather :('
-            split = smart_split(weather, 250)
-            for part in split:
-                pager_transmit(part, msg_meta["FROM"], msg_meta['SPEED'], 0)
 
-    match = re.match(r'=[gGtT]', msg_text)
-    if match and msg_meta['TO'] == str(MY_ID):
-        if msg_meta['FROM'] in mailbox:
-            logging.info('%s request from mailbox', msg_meta["FROM"])
-            pager_transmit(mailbox[msg_meta['FROM']] + MSG_END,
-                           msg_meta["FROM"], msg_meta['SPEED'], 0)
-        else:
-            logging.info('No msg to %s in mailbox', msg_meta["FROM"])
-            pager_transmit('No msg', msg_meta["FROM"], msg_meta['SPEED'], 0)
+    # парсим =x{lat},{lon}: weather -> hf
+    if not HFPGATE:
+        match = re.match(r'=[xX](?P<LAT>-{0,1}\d{1,2}\.\d{1,8}),'
+                         r'(?P<LON>-{0,1}\d{1,3}\.\d{1,8})',
+                         msg_text)
+        if match:
+            msg_geo = match.groupdict()
+            msg_geo["LAT"] = round(float(msg_geo["LAT"]) + GEO_DELTA, 4)
+            msg_geo["LON"] = round(float(msg_geo["LON"]) + GEO_DELTA, 4)
+            if int(msg_meta["TO"]) == MY_ID:
+                logging.info('HFpager -> Weather: %s %s',
+                             msg_geo["LAT"], msg_geo["LON"])
+                bot.send_message(chat_id=CHAT_ID,
+                                 text=(f'{MY_ID}>{msg_meta["FROM"]} '
+                                       f'weather in {msg_geo["LAT"]},'
+                                       f'{msg_geo["LON"]}'))
+                if OWM_API_KEY != 'NO_OWM_API_TOKEN':
+                    weather = get_weather(
+                        OWM_API_KEY, msg_geo["LAT"], msg_geo["LON"]) + MSG_END
+                else:
+                    weather = 'Sorry, no weather :('
+                split = smart_split(weather, 250)
+                for part in split:
+                    pager_transmit(
+                        part, msg_meta["FROM"], msg_meta['SPEED'], 0)
+
+    # парсим =[gGtT]: last msg to id -> hf
+    if not HFPGATE:
+        match = re.match(r'=[gGtT]', msg_text)
+        if match and msg_meta['TO'] == str(MY_ID):
+            if msg_meta['FROM'] in mailbox:
+                logging.info('%s request from mailbox', msg_meta["FROM"])
+                pager_transmit(mailbox[msg_meta['FROM']] + MSG_END,
+                               msg_meta["FROM"], msg_meta['SPEED'], 0)
+            else:
+                logging.info('No msg to %s in mailbox', msg_meta["FROM"])
+                pager_transmit(
+                    'No msg', msg_meta["FROM"], msg_meta['SPEED'], 0)
+
+    # парсим /ping:
+    match = re.match(r'^/ping', msg_text)
+    if match:
+        text = msg_full.split(':', maxsplit=1)[0].strip()
+        sleep(random.randrange(2, 30))
+        pager_transmit(text + MSG_END, msg_meta["FROM"], msg_meta['SPEED'], 0)
 
 
 def pager_transmit(message, abonent_id, speed, resend):
