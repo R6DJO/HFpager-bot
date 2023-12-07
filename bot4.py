@@ -245,7 +245,7 @@ def detect_request(msg_full):
     # получаем метаданные сообщения
     match = re.match(r'(?P<FROM>\d{1,5}) \(\d{3}\) > '
                      r'(?P<TO>[0-9]{1,5}), '
-                     r'(?P<SPEED>\d{1,2}\.{0,1}\d{0,1})\s*Bd,ER='
+                     r'(?P<SPEED>\d{1,2}\.{0,1}\d{0,1}) Bd,ER='
                      r'(?P<ERR>\d{1,2}\.{0,1}\d{0,1})',
                      msg_full)
     if match:
@@ -312,7 +312,7 @@ def detect_request(msg_full):
     if match:
         text = msg_full.split(':', maxsplit=1)[0].strip()
         sleep(random.randrange(2, 30))
-        pager_transmit(f'ERR={msg_meta["ERR"]}%{MSG_END}',
+        pager_transmit(f'ACK ERR={msg_meta["ERR"]}%{MSG_END}',
                        msg_meta["FROM"], msg_meta['SPEED'], 0)
 
 
