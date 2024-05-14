@@ -350,7 +350,7 @@ def detect_request(msg_full):
     )
     if match:
         msg_meta = match.groupdict()
-        logging.info(pformat(msg_meta))
+        logging.debug(pformat(msg_meta))
         msg_meta["SPEED"] = get_speed(msg_meta["SPEED"])
         # logging.info(pformat(msg_meta))
 
@@ -493,7 +493,7 @@ def pager_transmit(message, abonent_id, speed, resend):
             f"askreq={ackreq},resend={resend}\n"
             f"{message.strip()}"
         )
-        logging.info(msg_shablon)
+        logging.debug(msg_shablon)
         with open(HFPAGER_PATH + "data/to_send/new.ms", "w", encoding="cp1251") as f:
             f.write(msg_shablon)
         os.rename(
