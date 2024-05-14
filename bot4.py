@@ -341,8 +341,8 @@ def detect_request(msg_full):
     msg_head = msg_head.replace(" ","")
     # получаем метаданные сообщения
     match = re.match(
-        r"(?P<FROM>\d{1,5})\(\d{3}\)>"
-        r"(?P<TO>[0-9]{1,5}),"
+        r"(?P<FROM>\d{1,5})(?P<CALLSIGN_FROM>.*)\(\d{3}\)>"
+        r"(?P<TO>[0-9]{1,5})(?P<CALLSIGN_TO>.*),"
         r"(?P<SPEED>\d{1,2}\.{0,1}\d{0,1})Bd,ER="
         r"(?P<ERR>\d{1,2}\.{0,1}\d{0,1})",
         msg_head,
