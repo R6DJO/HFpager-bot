@@ -339,6 +339,7 @@ def detect_request(msg_full):
     msg_meta["FROM"], msg_meta["TO"] = 0, 0
     msg_head, msg_text= msg_full.split("\n", maxsplit=1)
     msg_head = msg_head.replace(" ","")
+    msg_text=msg_text.strip()
     # получаем метаданные сообщения
     match = re.match(
         r"(?P<FROM>\d{1,5})(?P<CALLSIGN_FROM>.*)\(\d{3}\)>"
@@ -419,7 +420,7 @@ def detect_request(msg_full):
                 pager_transmit("No msg", msg_meta["FROM"], msg_meta["SPEED"], 0)
 
     # парсим /ping:
-    match = re.match(r"^/ping", msg_text)
+    match = re.match(r"/ping", msg_text)
     if match:
         text = msg_full.split(":", maxsplit=1)[0].strip()
         sleep(random.randrange(2, 30))
