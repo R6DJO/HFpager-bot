@@ -155,3 +155,4 @@ test.py
 *.log
 *.ini
 *.bak
+*.txt

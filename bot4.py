@@ -337,14 +337,15 @@ def detect_request(msg_full):
     """Function detect request in radio msg."""
     msg_meta = {}
     msg_meta["FROM"], msg_meta["TO"] = 0, 0
-    msg_text = msg_full.split("\n", maxsplit=1)[-1]
+    msg_head, msg_text= msg_full.split("\n", maxsplit=1)
+    msg_head = msg_head.replace(" ","")
     # получаем метаданные сообщения
     match = re.match(
-        r"(?P<FROM>\d{1,5}) \(\d{3}\) > "
-        r"(?P<TO>[0-9]{1,5}), "
-        r"(?P<SPEED>\d{1,2}\.{0,1}\d{0,1}) Bd,ER="
+        r"(?P<FROM>\d{1,5})\(\d{3}\)>"
+        r"(?P<TO>[0-9]{1,5}),"
+        r"(?P<SPEED>\d{1,2}\.{0,1}\d{0,1})Bd,ER="
         r"(?P<ERR>\d{1,2}\.{0,1}\d{0,1})",
-        msg_full,
+        msg_head,
     )
     if match:
         msg_meta = match.groupdict()
