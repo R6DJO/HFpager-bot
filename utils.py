@@ -5,7 +5,7 @@ import requests
 # Function get_weather: Fetches weather information using the OpenWeatherMap API
 def get_weather(OWM_API_KEY, lat, lon):
     """Function get weater from OWM servers."""
-    url = ('http://api.openweathermap.org/data/2.5/onecall?'
+    url = ('http://api.openweathermap.org/data/3.0/onecall?'
            f'lat={lat}&lon={lon}&exclude=minutely,hourly&appid={OWM_API_KEY}'
            '&lang=ru&units=metric')
     resp = requests.get(url, timeout=10)
